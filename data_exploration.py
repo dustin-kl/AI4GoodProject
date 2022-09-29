@@ -26,7 +26,7 @@ lat: latitude
 lon: longitude
 time
 
-How to access data?      ds['T500'][0, :10, :10]
+How to access data?      ds['T500'][0, :10, :10]            ds[<feature>][time, lat, lon]
 
 Classes to predict:      0: Background, 1: Tropical Cyclone, 2: Athmospheric river
 
