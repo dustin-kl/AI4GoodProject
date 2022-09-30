@@ -1,0 +1,4 @@
+*.nc
+Pipfile
+Pipfile.lock
+*.zip
