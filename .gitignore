@@ -3,3 +3,4 @@ Pipfile
 Pipfile.lock
 *.zip
 Dataset
+.idea
