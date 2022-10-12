@@ -21,7 +21,7 @@ def main():
     url = "https://drive.google.com/uc?id=11mn7JE1aCGSOPt7y719swNoaDTJSJ3ze"
     download_folder(url, zip_file)
 
-    unzip(zip_file, directory)
+    #unzip(zip_file, directory)
 
     #remove_file(zip_file)
 
