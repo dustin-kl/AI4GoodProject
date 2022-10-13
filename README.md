@@ -58,3 +58,5 @@ make pipeline-local username="your eth username" data=true/false
 # This command has to be run on Euler
 make pipeline-euler data=true/false
 ```
+
+The details of the pipeline here is mostly similar to the normal pipeline, including also some commands needed to upload the data to Euler. For curiosity you are free to give a look to Makefile.
