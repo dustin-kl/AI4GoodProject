@@ -60,6 +60,12 @@ run:
 	@echo "To be discussed"
 	python main.py
 
+# Runs the code on Euler, still has to be discussed
+run-euler:
+	@echo "Running code on Euler..."
+	bsub python main.py
+	@echo "Code has been run on Euler"
+
 # In order to run the code locally just run the following command:
 # make pipeline data=true username=your_username
 # If you already have the data, just run the following command:
@@ -95,7 +101,7 @@ pipeline-euler:
 		make unzip-data;
 	fi
 	make set-pipenv
-	make run
+	make run-euler
 	@echo "Euler part of pipeline has been run"
 
 # Used only for testing
