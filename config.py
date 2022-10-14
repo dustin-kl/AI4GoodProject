@@ -20,6 +20,15 @@ config['dataset'] = 'EEG'
 config['batch_size'] = 32
 config['shuffle'] = True
 
+config['train_dataset'] = ['data-1996-06-09-01-1.nc']
+config['val_dataset'] = ['data-1996-06-09-01-1.nc']
+config['test_dataset'] = ['data-1996-06-09-01-1.nc']
+
+'''
+Feature List
+'''
+config['feature_list'] = ['T500']
+
 """
 Training related settings
 """

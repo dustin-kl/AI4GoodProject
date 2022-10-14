@@ -1,10 +1,13 @@
 import netCDF4 as nc
 import numpy as np
+from scipy.io import netcdf
 
-fn = '/home/dustin/Documents/Study/3. Master/AI4Good/data/data-1996-06-09-01-1_0.nc'
+fn = './dataset/data-2010-08-30-01-1.nc4'
+# ds = netcdf.NetCDFFile(fn)
 ds = nc.Dataset(fn)
 
-# print(ds)
+print(ds.__dict__)
+print(ds.variables.values())
 # print(ds['T500'].description)
 # print(type(np.asarray(ds['T500'])))
 # print(ds.variables)
@@ -12,8 +15,8 @@ ds = nc.Dataset(fn)
 # for dim in ds.dimensions.values():
 #     print(dim)
 
-# for var in ds.variables.values():
-#     print(var)
+for var in ds.variables.values():
+    print(var)
 
 # print(ds['T500'][0, :10, :10])
 
