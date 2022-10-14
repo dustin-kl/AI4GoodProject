@@ -1,7 +1,7 @@
 import netCDF4 as nc
 import numpy as np
 
-fn = '/home/dustin/Documents/Study/3. Master/AI4Good/data/data-1996-06-09-01-1_0.nc'
+fn = '/mnt/data/ai4good/climatenet_new/train/data-2000-12-20-01-1_5.nc'
 ds = nc.Dataset(fn)
 
 # print(ds)
