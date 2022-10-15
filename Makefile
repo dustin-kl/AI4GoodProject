@@ -30,7 +30,7 @@ upload-data:
 # Unzips the data
 unzip-data:
 	@echo "Unzipping data..."
-	unzip Dataset.zip
+	unzip Dataset.zip -d ./
 	mv Dataset dataset
 	@echo "Data unzipped to ./dataset"
 

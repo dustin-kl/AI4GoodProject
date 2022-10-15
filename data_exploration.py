@@ -1,22 +1,17 @@
-import netCDF4 as nc
+from netCDF4 import Dataset
 import numpy as np
-from scipy.io import netcdf
 
-fn = './dataset/data-2010-08-30-01-1.nc4'
+fn = './dataset/data-2013-09-27-01-1.nc'
 # ds = netcdf.NetCDFFile(fn)
-ds = nc.Dataset(fn)
+ds = Dataset(fn)
 
-print(ds.__dict__)
-print(ds.variables.values())
+print(ds["data"]["T500"][:])
 # print(ds['T500'].description)
 # print(type(np.asarray(ds['T500'])))
 # print(ds.variables)
 
 # for dim in ds.dimensions.values():
 #     print(dim)
-
-for var in ds.variables.values():
-    print(var)
 
 # print(ds['T500'][0, :10, :10])
 
