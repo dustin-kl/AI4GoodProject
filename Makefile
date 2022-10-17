@@ -1,4 +1,5 @@
 data = false
+model = model
 
 # Downloads data from google drive
 download-data:
@@ -58,12 +59,12 @@ exit-pipenv:
 # Runs the code
 run:
 	@echo "To be discussed"
-	python main.py
+	python main.py --model $(model)
 
 # Runs the code on Euler, still has to be discussed
 run-euler:
 	@echo "Running code on Euler..."
-	bsub python main.py
+	bsub python main.py --model $(model)
 	@echo "Code has been run on Euler"
 
 # In order to run the code locally just run the following command:

@@ -6,7 +6,7 @@ import torch
 from src.models.Model import Model
 
 
-class CNN(Model):
+class CNN(pl.LightningModule):
     def __init__(self, parameters):
         super().__init__(parameters)
         self.l1 = nn.Linear(28 * 28, 10)
