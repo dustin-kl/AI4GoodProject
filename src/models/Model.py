@@ -5,25 +5,35 @@ import torch
 
 
 class Model(pl.LightningModule):
+    """
+    Do not call this class, it is used only for testing.
+    """
+
     def __init__(self, parameters):
         super().__init__()
         self.params = parameters
-        self.l1 = nn.Linear(28 * 28, 10)
+        self.cnv = nn.Conv2d(1, 1, 1)
+        self.bn = nn.BatchNorm2d(1)
 
     def forward(self, x):
+        x = self.cnv(x)
+        x = self.bn(x)
         return x
 
     def training_step(self, batch, batch_idx):
-        x, y = batch
+        x = batch[:, 0]
+        y = batch[:, 1]
         y_hat = self.forward(x)
-        loss = F.cross_entropy(y_hat, y)
-        return {"loss": loss, 'val_loss': loss}
+        loss = nn.BCELoss()
+        self.log("loss", loss(y, y))
+        return {"loss": loss(y, y)}
 
     def validation_step(self, batch, barch_idx):
-        x, y = batch
+        x = batch[:, 0]
+        y = batch[:, 1]
         y_hat = self.forward(x)
-        loss = F.cross_entropy(y_hat, y)
-        self.log("val_loss", loss)
+        loss = nn.BCELoss()
+        self.log("val_loss", loss(y, y))
 
     def validation_epoch_end(self, outputs):
         print(outputs)
@@ -31,8 +41,8 @@ class Model(pl.LightningModule):
     def test_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self.forward(x)
-        loss = F.cross_entropy(y_hat, y)
-        return loss
+        loss = nn.BCELoss()
+        return loss(y, y)
 
     def configure_optimizers(self):
-        return torch.optim.Adam(self.parameters(), lr=0.02)
+        return torch.optim.Adam(self.parameters())

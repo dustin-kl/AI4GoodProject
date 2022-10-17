@@ -2,7 +2,6 @@
 Pipfile
 Pipfile.lock
 *.zip
-Dataset
 __pycache__
 logs/test
 logs/model
