@@ -18,6 +18,6 @@ params = {
     "other_model": {},
     "model": {
         "batch_size": 32,
-        "epochs": 1,
+        "epochs": 3,
     },
 }

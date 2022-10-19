@@ -22,7 +22,7 @@ def run_model(model, data_module, logger, log_dir):
     trainer = pl.Trainer(
         # accelerator="gpu",  # cpu or gpu
         # devices=-1,  # -1: use all available gpus, for cpu e.g. 4
-        enable_progress_bar=False,
+        enable_progress_bar=True,
         logger=[logger],
         max_epochs=model.params["epochs"],  # max number of epochs
         callbacks=[
@@ -41,5 +41,5 @@ def run_model(model, data_module, logger, log_dir):
     Logger.log_info("Finished training.")
 
     Logger.log_info("Testing model...")
-    trainer.test(model, data_module)
+    trainer.test(model, data_module.test_dataloader())
     Logger.log_info("Finished testing.")

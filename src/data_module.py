@@ -20,7 +20,7 @@ class DataModule(pl.LightningDataModule):
         self.batch_size = batch_size
         self.num_workers = 8
         self.setup()
-        Logger.log_info("Data module set up.")
+        # Logger.log_info("Data module set up.")
 
     def setup(self, stage: Optional[str] = None):
         # Assign train/val datasets for use in dataloaders
