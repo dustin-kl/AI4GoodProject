@@ -4,6 +4,7 @@ from src.models.hyperparameters import params
 from src.data_module import DataModule
 from src.utils import Logger
 from src.models.manager import get_model, run_model
+from src.utils import Logger
 
 
 parser = argparse.ArgumentParser(description="select which model to run")
@@ -17,6 +18,7 @@ def main():
     model = args["model"]
 
     tb_logger, log_dir = Logger.setup_logger(model)
+    Logger.log_info(params[model])
 
     # Obtain datamodule based on config settings for dataset
     data_module = DataModule(batch_size=params[model]["batch_size"])

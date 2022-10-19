@@ -25,8 +25,8 @@ class Model(pl.LightningModule):
         y = batch[:, 1]
         y_hat = self.forward(x)
         loss = nn.BCELoss()
-        self.log("loss", loss(y, y))
-        return {"loss": loss(y, y)}
+        self.log("loss", loss(y, y_hat))
+        return {"loss": loss(y, y_hat)}
 
     def validation_step(self, batch, barch_idx):
         x = batch[:, 0]
@@ -39,10 +39,11 @@ class Model(pl.LightningModule):
         print(outputs)
 
     def test_step(self, batch, batch_idx):
-        x, y = batch
+        x = batch[:, 0]
+        y = batch[:, 1]
         y_hat = self.forward(x)
         loss = nn.BCELoss()
-        return loss(y, y)
+        return loss(y, y_hat)
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters())
