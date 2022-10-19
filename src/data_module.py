@@ -43,8 +43,10 @@ class DataModule(pl.LightningDataModule):
                     NetCDF.load_data(self.data_dir + dataset, config["features"]),
                     dtype=torch.float32,
                 ),
-                torch.tensor(
-                    NetCDF.load_labels(self.data_dir + dataset), dtype=torch.long
+                torch.nn.functional.one_hot(
+                    torch.tensor(
+                        NetCDF.load_labels(self.data_dir + dataset)
+                    )
                 ),
             )
             data.append(sample)

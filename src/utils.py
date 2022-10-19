@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-import sys
 import time
 
 from netCDF4 import Dataset
@@ -44,8 +43,9 @@ class NetCDF:
         data = []
         for feature in features:
             data.append(dataset[feature][:][0])
-        data = np.array(data)
         dataset.close()
+        data = np.array(data)
+        data = np.rollaxis(data, 0, 3)
         return data
 
     @staticmethod
