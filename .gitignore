@@ -6,3 +6,4 @@ __pycache__
 logs/test
 logs/model
 .ipynb_checkpoints
+dataset

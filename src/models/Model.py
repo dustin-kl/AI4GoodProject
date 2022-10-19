@@ -21,16 +21,14 @@ class Model(pl.LightningModule):
         return x
 
     def training_step(self, batch, batch_idx):
-        x = batch[:, 0]
-        y = batch[:, 1]
+        x, y = batch
         y_hat = self.forward(x)
         loss = nn.BCELoss()
         self.log("loss", loss(y, y_hat))
         return {"loss": loss(y, y_hat)}
 
     def validation_step(self, batch, barch_idx):
-        x = batch[:, 0]
-        y = batch[:, 1]
+        x, y = batch
         y_hat = self.forward(x)
         loss = nn.BCELoss()
         self.log("val_loss", loss(y, y))

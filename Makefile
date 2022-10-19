@@ -1,4 +1,5 @@
 data = false
+model = model
 
 # Downloads data from google drive
 download-data:
@@ -15,23 +16,24 @@ load-module:
 # Uploads the code without data to Euler
 copy-to-euler:
 	@echo "Copying files to Euler..."
-	mv Dataset.zip ../ || true
+	mv dataset.zip ../ || true
+	mv dataset ../ || true
 	ssh $(username)@euler.ethz.ch "rm -rf /cluster/scratch/$(username)/AI4Good/.git/"
 	scp -r . $(username)@euler.ethz.ch:/cluster/scratch/$(username)/AI4Good/
-	mv ../Dataset.zip . || true
+	mv ../dataset.zip . || true
+	mv ../dataset . || true
 	@echo "Files have been copied to Euler"
 
 # Uploads the data to Euler
 upload-data:
 	@echo "Uploading data to Euler..."
-	scp -r ./Dataset.zip $(username)@euler.ethz.ch:/cluster/scratch/$(username)/AI4Good/
+	scp -r ./dataset.zip $(username)@euler.ethz.ch:/cluster/scratch/$(username)/AI4Good/
 	@echo "Data uploaded to Euler"
 
 # Unzips the data
 unzip-data:
 	@echo "Unzipping data..."
-	unzip Dataset.zip -d ./
-	mv Dataset dataset
+	unzip dataset.zip -d ./
 	@echo "Data unzipped to ./dataset"
 
 # Sets up the pipenv environment
@@ -58,12 +60,12 @@ exit-pipenv:
 # Runs the code
 run:
 	@echo "To be discussed"
-	python main.py
+	python main.py --model $(model)
 
 # Runs the code on Euler, still has to be discussed
 run-euler:
 	@echo "Running code on Euler..."
-	bsub python main.py
+	bsub python main.py --model $(model)
 	@echo "Code has been run on Euler"
 
 # In order to run the code locally just run the following command:

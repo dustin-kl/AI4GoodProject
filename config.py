@@ -28,7 +28,6 @@ config["shuffle"] = True
 with open(Generic.get_directory(__file__) + "/data_split.json") as f:
     data_split = json.load(f)
     config["train_dataset"] = data_split["train"]
-    config["val_dataset"] = data_split["validation"]
     config["test_dataset"] = data_split["test"]
     
 """

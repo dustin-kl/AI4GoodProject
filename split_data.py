@@ -1,21 +1,14 @@
-import os
-import json
-
-import numpy as np
-from sklearn.model_selection import train_test_split
-from sklearn.utils import shuffle
-
 from src.utils import Generic
 
 def main():
     directory = Generic.get_directory(__file__)
-    data = os.listdir(directory)
-    data = shuffle(data)
-    train, test = train_test_split(data, test_size=0.2)
-    validation, test = train_test_split(test, test_size=0.5)
-
-    with open(directory + "data_split.json", "w") as f:
-        json.dump({"train": train, "validation": validation, "test": test}, f)
+    data_list = Generic.list_files(directory + "/dataset")
+    data_train, data_test = Generic.split_data(data_list)
+    data_split = {
+        "train": data_train,
+        "test": data_test,
+    }
+    Generic.to_json(data_split, directory + "/data_split.json")
 
 
 if __name__ == "__main__":
