@@ -19,6 +19,13 @@ class DataModule(pl.LightningDataModule):
         self.data_dir = Generic.get_directory(__file__) + "/../dataset/"
         self.batch_size = batch_size
         self.num_workers = 8
+        self.train_files, self.val_files = Generic.split_data(config["train_dataset"])
+        self.test_files = config["test_dataset"]
+        self.dataset = {
+            "train": self.train_files,
+            "val": self.val_files,
+            "test": self.test_files,
+        }
         self.setup()
         Logger.log_info("Data module set up.")
 
@@ -30,20 +37,30 @@ class DataModule(pl.LightningDataModule):
 
     def load_data(self, mode):
         data = []
-        for dataset in config[f"{mode}_dataset"]:
-            sample = [
-                NetCDF.load_data(self.data_dir + dataset, config["features"]),
-                NetCDF.load_labels(self.data_dir + dataset),
-            ]
-            data.append(np.array(sample))
-        data = torch.tensor(np.array(data), dtype=torch.float32)
+        for dataset in self.dataset[mode]:
+            sample = (
+                torch.tensor(
+                    NetCDF.load_data(self.data_dir + dataset, config["features"]),
+                    dtype=torch.float32,
+                ),
+                torch.tensor(
+                    NetCDF.load_labels(self.data_dir + dataset), dtype=torch.long
+                ),
+            )
+            data.append(sample)
         return data
 
     def train_dataloader(self):
-        return DataLoader(self.train_set, batch_size=self.batch_size, num_workers=self.num_workers)
+        return DataLoader(
+            self.train_set, batch_size=self.batch_size, num_workers=self.num_workers
+        )
 
     def val_dataloader(self):
-        return DataLoader(self.val_set, batch_size=self.batch_size, num_workers=self.num_workers)
+        return DataLoader(
+            self.val_set, batch_size=self.batch_size, num_workers=self.num_workers
+        )
 
     def test_dataloader(self):
-        return DataLoader(self.test_set, batch_size=self.batch_size, num_workers=self.num_workers)
+        return DataLoader(
+            self.test_set, batch_size=self.batch_size, num_workers=self.num_workers
+        )

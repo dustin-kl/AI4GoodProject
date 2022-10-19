@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import sys
@@ -5,6 +6,9 @@ import time
 
 from netCDF4 import Dataset
 from pytorch_lightning.loggers import TensorBoardLogger
+from sklearn.model_selection import train_test_split
+from sklearn.utils import shuffle
+import numpy as np
 
 
 class Generic:
@@ -16,6 +20,22 @@ class Generic:
     def remove_file(file):
         return os.remove(file)
 
+    @staticmethod
+    def list_files(directory):
+        file_list = os.listdir(directory)
+        return file_list
+
+    @staticmethod
+    def to_json(dictionary, path):
+        with open(path, "w") as f:
+            json.dump(dictionary, f)
+
+    @staticmethod
+    def split_data(data_list):
+        data_list = shuffle(data_list)
+        data_train, data_test = train_test_split(data_list, test_size=0.2)
+        return data_train, data_test
+
 
 class NetCDF:
     @staticmethod
@@ -23,15 +43,17 @@ class NetCDF:
         dataset = Dataset(path)
         data = []
         for feature in features:
-            data.append(dataset["data"][feature][:])
+            data.append(dataset[feature][:][0])
+        data = np.array(data)
+        dataset.close()
         return data
 
     @staticmethod
     def load_labels(path):
         dataset = Dataset(path)
-        labels = []
-        labels.append(dataset["labels"]["label_0_ar"][:])
-        #labels.append(dataset["labels"]["label_0_tc"][:])
+        labels = dataset["LABELS"][:]
+        labels = np.array(labels)
+        dataset.close()
         return labels
 
 
