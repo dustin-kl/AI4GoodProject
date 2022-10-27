@@ -1,18 +1,9 @@
-import argparse
-
+from parser import args
 from src.models.hyperparameters import params
 from src.data_module import DataModule
 from src.utils import Logger
 from src.models.manager import get_model, run_model
 from src.utils import Logger
-
-
-parser = argparse.ArgumentParser(description="select which model to run")
-parser.add_argument(
-    "-m", "--model", type=str, default="model", help="select which model to run"
-)
-args = vars(parser.parse_args())
-
 
 def main():
     model = args["model"]

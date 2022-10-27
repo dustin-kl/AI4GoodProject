@@ -1,10 +1,12 @@
 data = false
 model = model
+test = false
+branch = main
 
 # Downloads data from google drive
 download-data:
 	@echo "Downloading data from Google Drive..."
-	python download_data.py
+	python download_data.py --test $(test)
 	@echo "Data has been downloaded"
 
 # Loads the needed module on Euler
@@ -16,24 +18,25 @@ load-module:
 # Uploads the code without data to Euler
 copy-to-euler:
 	@echo "Copying files to Euler..."
-	mv dataset.zip ../ || true
-	mv dataset ../ || true
 	ssh $(username)@euler.ethz.ch "rm -rf /cluster/scratch/$(username)/AI4Good/.git/"
+	scp -r ./dataset.zip $(username)@euler.ethz.ch:/cluster/scratch/$(username)/AI4Good/
 	scp -r . $(username)@euler.ethz.ch:/cluster/scratch/$(username)/AI4Good/
-	mv ../dataset.zip . || true
-	mv ../dataset . || true
 	@echo "Files have been copied to Euler"
 
 # Uploads the data to Euler
 upload-data:
 	@echo "Uploading data to Euler..."
-	scp -r ./dataset.zip $(username)@euler.ethz.ch:/cluster/scratch/$(username)/AI4Good/
+	scp -r ./dataset.zip $(username)@euler.ethz.ch:/cluster/work/igp_psr/ai4good/group-1a/
 	@echo "Data uploaded to Euler"
 
 # Unzips the data
 unzip-data:
 	@echo "Unzipping data..."
-	unzip dataset.zip -d ./
+	if $(test) = true; then \
+		unzip dataset-test.zip -d ./dataset; \
+	else \
+		unzip dataset.zip -d ./; \
+	fi
 	@echo "Data unzipped to ./dataset"
 
 # Sets up the pipenv environment
@@ -60,11 +63,13 @@ exit-pipenv:
 # Runs the code
 run:
 	@echo "To be discussed"
-	python main.py --model $(model)
+	python main.py --model $(model) --test $(test)
 
 # Runs the code on Euler, still has to be discussed
 run-euler:
 	@echo "Running code on Euler..."
+	git pull
+	git checkout $(branch)
 	bsub python main.py --model $(model)
 	@echo "Code has been run on Euler"
 

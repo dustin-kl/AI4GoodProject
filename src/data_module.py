@@ -34,6 +34,8 @@ class DataModule(pl.LightningDataModule):
         self.train_set = self.load_data("train")
         self.val_set = self.load_data("val")
         self.test_set = self.load_data("test")
+        print(len(self.train_set))
+        print(self.train_set[0][0].shape)
 
     def load_data(self, mode):
         data = []
@@ -47,9 +49,10 @@ class DataModule(pl.LightningDataModule):
                     torch.tensor(
                         NetCDF.load_labels(self.data_dir + dataset)
                     )
-                ),
+                ).permute(2 ,0, 1).type(torch.float32),
             )
             data.append(sample)
+            print(sample[1])
         return data
 
     def train_dataloader(self):

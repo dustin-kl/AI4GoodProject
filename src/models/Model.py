@@ -12,12 +12,11 @@ class Model(pl.LightningModule):
     def __init__(self, parameters):
         super().__init__()
         self.params = parameters
-        self.cnv = nn.Conv2d(1, 1, 1)
+        self.cnv = nn.Conv2d(1, 3, 1)
         self.bn = nn.BatchNorm2d(1)
 
     def forward(self, x):
         x = self.cnv(x)
-        x = self.bn(x)
         return x
 
     def training_step(self, batch, batch_idx):
@@ -37,8 +36,7 @@ class Model(pl.LightningModule):
         print(outputs)
 
     def test_step(self, batch, batch_idx):
-        x = batch[:, 0]
-        y = batch[:, 1]
+        x, y = batch
         y_hat = self.forward(x)
         loss = nn.CrossEntropyLoss()
         return loss(y, y_hat)

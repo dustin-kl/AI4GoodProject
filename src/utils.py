@@ -45,7 +45,7 @@ class NetCDF:
             data.append(dataset[feature][:][0])
         dataset.close()
         data = np.array(data)
-        data = np.rollaxis(data, 0, 3)
+        #data = np.rollaxis(data, 0, 3)
         return data
 
     @staticmethod
