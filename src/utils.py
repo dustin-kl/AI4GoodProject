@@ -4,7 +4,7 @@ import os
 import time
 
 from netCDF4 import Dataset
-from pytorch_lightning.loggers import TensorBoardLogger
+from pytorch_lightning.loggers import TensorBoardLogger, CSVLogger
 from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
 import numpy as np
@@ -73,6 +73,8 @@ class Logger:
         Logger.log_info(f"Started logging.")
 
         return TensorBoardLogger(log_dir, "tensor_board"), log_dir
+        #return CSVLogger(log_dir, "CSV_Log"), log_dir
+        
 
     @staticmethod
     def log_info(message):
