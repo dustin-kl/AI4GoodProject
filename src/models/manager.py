@@ -17,7 +17,7 @@ def get_model(model, parameters):
 
 
 def run_model(model, data_module, logger, log_dir):
-    #logger.log_hyperparams(model.params)
+    logger.log_hyperparams(model.params)
 
     trainer = pl.Trainer(
         # accelerator="gpu",  # cpu or gpu

@@ -1,5 +1,8 @@
 import json
+
+from parser import args
 from src.utils import Generic
+
 """
 In this file we configure which model to run and what to to with it
 We also select the dataset which we want to operate on
@@ -25,10 +28,16 @@ config["dataset"] = "EEG"
 config["batch_size"] = 32
 config["shuffle"] = True
 
-with open(Generic.get_directory(__file__) + "/data_split.json") as f:
-    data_split = json.load(f)
-    config["train_dataset"] = data_split["train"]
-    config["test_dataset"] = data_split["test"]
+if (args["test"]):
+    with open(Generic.get_directory(__file__) + "/data_split_test.json") as f:
+        data_split = json.load(f)
+        config["train_dataset"] = data_split["train"]
+        config["test_dataset"] = data_split["test"]
+else:
+    with open(Generic.get_directory(__file__) + "/data_split.json") as f:
+        data_split = json.load(f)
+        config["train_dataset"] = data_split["train"]
+        config["test_dataset"] = data_split["test"]
     
 """
 Feature List

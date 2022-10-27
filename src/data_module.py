@@ -47,7 +47,7 @@ class DataModule(pl.LightningDataModule):
                     torch.tensor(
                         NetCDF.load_labels(self.data_dir + dataset)
                     )
-                ),
+                ).permute(2 ,0, 1).type(torch.float32),
             )
             data.append(sample)
         return data

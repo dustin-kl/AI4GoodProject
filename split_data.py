@@ -1,3 +1,4 @@
+from parser import args
 from src.utils import Generic
 
 def main():
@@ -8,7 +9,10 @@ def main():
         "train": data_train,
         "test": data_test,
     }
-    Generic.to_json(data_split, directory + "/data_split.json")
+    if (args["test"]):
+        Generic.to_json(data_split, directory + "/data_split_test.json")
+    else:
+        Generic.to_json(data_split, directory + "/data_split.json")
 
 
 if __name__ == "__main__":
