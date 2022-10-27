@@ -23,14 +23,14 @@ class Model(pl.LightningModule):
         x, y = batch
         y_hat = self.forward(x)
         loss = nn.CrossEntropyLoss()
-        self.log("loss", loss(y, y_hat))
+        self.log("loss", loss(y, y_hat), on_step=False, on_epoch=True, prog_bar=False)
         return {"loss": loss(y, y_hat)}
 
     def validation_step(self, batch, barch_idx):
         x, y = batch
         y_hat = self.forward(x)
         loss = nn.CrossEntropyLoss()
-        self.log("val_loss", loss(y, y_hat))
+        self.log("val_loss", loss(y, y_hat), on_step=False, on_epoch=True, prog_bar=False)
 
     def validation_epoch_end(self, outputs):
         print(outputs)
@@ -39,6 +39,7 @@ class Model(pl.LightningModule):
         x, y = batch
         y_hat = self.forward(x)
         loss = nn.CrossEntropyLoss()
+        self.log("test_loss", loss(y, y_hat), on_step=False, on_epoch=True, prog_bar=False)
         return loss(y, y_hat)
 
     def configure_optimizers(self):
