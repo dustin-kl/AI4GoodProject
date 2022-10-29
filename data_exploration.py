@@ -1,19 +1,17 @@
-import netCDF4 as nc
+from netCDF4 import Dataset
 import numpy as np
 
-fn = '/mnt/data/ai4good/climatenet_new/train/data-2000-12-20-01-1_5.nc'
-ds = nc.Dataset(fn)
+fn = './dataset/data-2013-09-27-01-1.nc'
+# ds = netcdf.NetCDFFile(fn)
+ds = Dataset(fn)
 
-# print(ds)
+print(ds["data"]["T500"][:])
 # print(ds['T500'].description)
 # print(type(np.asarray(ds['T500'])))
 # print(ds.variables)
 
 # for dim in ds.dimensions.values():
 #     print(dim)
-
-# for var in ds.variables.values():
-#     print(var)
 
 # print(ds['T500'][0, :10, :10])
 

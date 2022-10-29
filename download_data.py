@@ -1,8 +1,10 @@
+from os.path import join
 from zipfile import ZipFile
 
 import gdown
 
-from src.utils import get_directory, remove_file
+from parser import args
+from src.utils import Generic
 
 
 def download_folder(url, output):
@@ -15,13 +17,19 @@ def unzip(zip_file, destination):
 
 
 def main():
-    directory = get_directory(__file__)
-    zip_file = directory + "/Dataset.zip"
+    directory = Generic.get_directory(__file__)
+    zip_file = directory + "/dataset.zip"
 
-    url = "https://drive.google.com/uc?id=11mn7JE1aCGSOPt7y719swNoaDTJSJ3ze"
-    download_folder(url, zip_file)
+    if (args["test"]):
+        url = "https://drive.google.com/uc?id=1tcbp4JUbIUyTm9qI9RyjTwRPkKr6Fdlx"
+        download_folder(url, join(directory, "dataset-test.zip"))
+    else:
+        url = "https://drive.google.com/uc?id=12nuEC3O1lfDrvJGIb87A5FyQqNfHZjwY"
+        download_folder(url, zip_file, "dataset.zip")
 
-    unzip(zip_file, directory)
+    
+
+    #unzip(zip_file, directory)
 
     #remove_file(zip_file)
 
