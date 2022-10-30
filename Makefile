@@ -96,7 +96,6 @@ pipeline-local:
 		make download-data;
 		make upload-data;
 	fi
-	make copy-to-euler
 	@echo "Local part of pipeline has been run"
 
 # After the local part of the pipeline has been run, go to Euler and run the following command:
