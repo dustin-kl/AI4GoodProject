@@ -7,7 +7,13 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "-t", "--test", type=bool, default=False, help="select whether to run in test mode"
+    "-t", "--test", default="false", help="select whether to run in test mode"
 )
 
 args = vars(parser.parse_args())
+
+if args["test"] == "true":
+    args["test"] = True
+else:
+    args["test"] = False
+    
