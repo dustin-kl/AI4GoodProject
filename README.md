@@ -54,6 +54,7 @@ In order to run the models on Euler run the following commands:
 ```bash
 # This command has to be run on your own machine.
 make pipeline-local username="your eth username" data=true/false
+# The source code is not uploaded automatically anymore, in order to upload the code to euler, please push to the repository and make a pull/clone on Euler.
 
 # This command has to be run on Euler
 make pipeline-euler data=true/false
