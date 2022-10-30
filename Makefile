@@ -6,7 +6,11 @@ branch = main
 # Downloads data from google drive
 download-data:
 	@echo "Downloading data from Google Drive..."
-	python download_data.py --test $(test)
+	if $(test) = true; then \
+		python download_data.py --test; \
+	else \
+		python download_data.py; \
+	fi
 	@echo "Data has been downloaded"
 
 # Loads the needed module on Euler
