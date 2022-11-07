@@ -5,6 +5,7 @@ from src.utils import Logger
 from src.models.manager import get_model, run_model
 from src.utils import Logger
 
+
 def main():
     model = args["model"]
 
