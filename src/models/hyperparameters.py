@@ -22,7 +22,7 @@ params = {
     },
     "baseline": {
         "channels": 4,
-        "batch_size": 32,
+        "batch_size": 1,
         "epochs": 3,
     },
 }
