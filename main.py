@@ -1,12 +1,16 @@
 from parser import args
+
+import torch
+
 from src.models.hyperparameters import params
 from src.data_module import DataModule
-from src.utils import Logger
 from src.models.manager import get_model, run_model
 from src.utils import Logger
 
 
 def main():
+    torch.cuda.empty_cache()
+
     model = args["model"]
 
     tb_logger, log_dir = Logger.setup_logger(model)
