@@ -20,7 +20,6 @@ Available modes: 'train', 'test', 'inference'
 config["model"] = "CNN"  # select which model to run
 config["mode"] = "train"
 
-
 """
 Dataset related settings 
 """
@@ -28,7 +27,7 @@ config["dataset"] = "EEG"
 config["batch_size"] = 32
 config["shuffle"] = True
 
-if (args["test"]):
+if args["test"]:
     with open(Generic.get_directory(__file__) + "/data_split_test.json") as f:
         data_split = json.load(f)
         config["train_dataset"] = data_split["train"]
@@ -38,7 +37,7 @@ else:
         data_split = json.load(f)
         config["train_dataset"] = data_split["train"]
         config["test_dataset"] = data_split["test"]
-    
+
 """
 Feature List
 """

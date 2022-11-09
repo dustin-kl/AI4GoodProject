@@ -3,6 +3,7 @@ from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint, ModelSum
 
 from src.models.CNN import CNN
 from src.models.Model import Model
+from src.models.baseline import DeepLabv3_plus
 from src.utils import Logger
 
 
@@ -11,6 +12,8 @@ def get_model(model, parameters):
         return CNN(parameters)
     if model == "model":
         return Model(parameters)
+    if model == "baseline":
+        return DeepLabv3_plus(parameters)
     else:
         Logger.log_error(f"Model {model} not found.")
         raise NotImplementedError
@@ -20,9 +23,9 @@ def run_model(model, data_module, logger, log_dir):
     logger.log_hyperparams(model.params)
 
     trainer = pl.Trainer(
-        # accelerator="gpu",  # cpu or gpu
-        # devices=-1,  # -1: use all available gpus, for cpu e.g. 4
-        enable_progress_bar=True,
+        accelerator="gpu",  # cpu or gpu
+        devices=-1,  # -1: use all available gpus, for cpu e.g. 4
+        enable_progress_bar=False,
         logger=[logger],
         max_epochs=model.params["epochs"],  # max number of epochs
         callbacks=[
@@ -33,7 +36,7 @@ def run_model(model, data_module, logger, log_dir):
             ),  # save best model
         ],
         auto_lr_find=True,  # automatically find learning rate
-        log_every_n_steps=1
+        log_every_n_steps=1,
     )
 
     Logger.log_info("Training model...")

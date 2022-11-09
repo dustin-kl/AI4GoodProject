@@ -20,4 +20,9 @@ params = {
         "batch_size": 32,
         "epochs": 3,
     },
+    "baseline": {
+        "channels": 4,
+        "batch_size": 1,
+        "epochs": 3,
+    },
 }
