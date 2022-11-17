@@ -1,48 +1,41 @@
-import pytorch_lightning as pl
-from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint, ModelSummary
+from pytorch_lightning import Trainer
+from pytorch_lightning.loggers import TensorBoardLogger
 
 from src.models.CNN import CNN
 from src.models.Model import Model
 from src.models.baseline import DeepLabv3_plus
-from src.utils import Logger
 
 
-def get_model(model, parameters):
-    if model == "CNN":
-        return CNN(parameters)
+def get_model(model, n_channels, params):
+    if model == "cnn":
+        return CNN(params)
     if model == "model":
-        return Model(parameters)
+        return Model(params)
     if model == "baseline":
-        return DeepLabv3_plus(parameters)
+        return DeepLabv3_plus(
+            params, nInputChannels=n_channels, n_classes=3, _print=False
+        )
     else:
-        Logger.log_error(f"Model {model} not found.")
         raise NotImplementedError
 
 
-def run_model(model, data_module, logger, log_dir):
+def train_model(model, model_name, data_module, trainer=None):
+    log_dir = "./runs/"
+    log_name = f"{model_name} - lr={model.lr}"
+    logger = TensorBoardLogger(log_dir, name=log_name)
+
     logger.log_hyperparams(model.params)
+    logger.log_graph(model)
 
-    trainer = pl.Trainer(
-        accelerator="gpu",  # cpu or gpu
-        devices=-1,  # -1: use all available gpus, for cpu e.g. 4
-        enable_progress_bar=False,
-        logger=[logger],
-        max_epochs=model.params["epochs"],  # max number of epochs
-        callbacks=[
-            EarlyStopping(monitor="val_loss", patience=10),  # early stopping
-            ModelSummary(max_depth=1),  # model summary
-            ModelCheckpoint(
-                log_dir + "checkpoint/", monitor="val_loss", save_top_k=1
-            ),  # save best model
-        ],
-        auto_lr_find=True,  # automatically find learning rate
-        log_every_n_steps=1,
-    )
+    if trainer is None:
+        trainer = Trainer(
+            accelerator="cpu",
+            enable_progress_bar=False,
+            max_epochs=1,
+            logger=[logger],
+            log_every_n_steps=1,
+        )
+    else:
+        trainer.logger = [logger]
 
-    Logger.log_info("Training model...")
-    trainer.fit(model, data_module.train_dataloader(), data_module.val_dataloader())
-    Logger.log_info("Finished training.")
-
-    Logger.log_info("Testing model...")
-    trainer.test(model, data_module.test_dataloader())
-    Logger.log_info("Finished testing.")
+    trainer.fit(model, datamodule=data_module)

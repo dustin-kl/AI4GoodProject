@@ -1,36 +1,38 @@
+import os
+
+from config import config
 from parser import args
-
-import torch
-
 from src.models.hyperparameters import params
-from src.data_module import DataModule
-from src.models.manager import get_model, run_model
-from src.utils import Logger
+from src.data_module import ClimateNetDataModule
+from src.models.manager import get_model, train_model
+from src.utils import Logger, Generic
 
 
 def main():
-    torch.cuda.empty_cache()
+    files = Generic.list_files("./dataset/")
 
-    model = args["model"]
+    if len(files) < 10:
+        raise Exception(
+            "The amount of data is not enough, please download the data before running again."
+        )
 
-    tb_logger, log_dir = Logger.setup_logger(model)
-    Logger.log_info(params[model])
+    model_name = args.model
+    model_params = params[model_name]
 
-    # Obtain datamodule based on config settings for dataset
-    data_module = DataModule(batch_size=params[model]["batch_size"])
+    feature_list = config["feature_list"]
+    batch_size = model_params["batch_size"]
 
-    try:
-        model = get_model(model, params[model])
-    except NotImplementedError:
-        exit()
+    if args.test:
+        files = files[:10]
+    data_module = ClimateNetDataModule(files, feature_list, batch_size)
 
-    run_model(model, data_module, tb_logger, log_dir)
+    model = get_model(model_name, len(feature_list), params[model_name])
+
+    if args.test:
+        model_name = "test"
+    train_model(model, model_name, data_module)
 
 
 if __name__ == "__main__":
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
     main()
-
-    """'
-    Give list to dataloader of which features to use
-    Metric: IoU, Accuracy, F1 score
-    """
