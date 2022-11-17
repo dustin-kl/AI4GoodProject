@@ -1,68 +1,67 @@
-"""
-Create dataloaders depending on settings in config.py
-"""
-
-from typing import Optional
-from config import config
-
+from netCDF4 import Dataset
 import numpy as np
 import pytorch_lightning as pl
 import torch
-from torch.utils.data import DataLoader
+import torch.nn.functional as F
+from torch.utils.data import DataLoader, random_split
 
-from src.utils import Generic, NetCDF, Logger
 
-
-class DataModule(pl.LightningDataModule):
-    def __init__(self, batch_size):
+class ClimateNetDataModule(pl.LightningDataModule):
+    def __init__(self, files, feature_list, batch_size, num_workers=8, shuffle=True):
         super().__init__()
-        self.data_dir = Generic.get_directory(__file__) + "/../dataset/"
+        self.files = files
         self.batch_size = batch_size
-        self.num_workers = 8
-        self.train_files, self.val_files = Generic.split_data(config["train_dataset"])
-        self.test_files = config["test_dataset"]
-        self.dataset = {
-            "train": self.train_files,
-            "val": self.val_files,
-            "test": self.test_files,
-        }
-        self.setup()
-        # Logger.log_info("Data module set up.")
+        self.feature_list = feature_list
+        self.num_workers = num_workers
+        self.shuffle = shuffle
 
-    def setup(self, stage: Optional[str] = None):
-        # Assign train/val datasets for use in dataloaders
-        self.train_set = self.load_data("train")
-        self.val_set = self.load_data("val")
-        self.test_set = self.load_data("test")
+        self.train_files = self.val_files = None
+        self.train_ds = self.val_ds = None
 
-    def load_data(self, mode):
-        data = []
-        for dataset in self.dataset[mode]:
-            sample = (
-                torch.tensor(
-                    NetCDF.load_data(self.data_dir + dataset, config["features"]),
-                    dtype=torch.float32,
-                ),
-                torch.nn.functional.one_hot(
-                    torch.tensor(
-                        NetCDF.load_labels(self.data_dir + dataset)
-                    )
-                ).permute(2 ,0, 1).type(torch.float32),
-            )
-            data.append(sample)
-        return data
+    def prepare_data(self):
+        self.train_files, self.val_files = random_split(self.files, [0.8, 0.2])
+
+    def setup(self, stage: str = None):
+        if stage == "fit":
+            self.train_ds = []
+            self.val_ds = []
+            for file in self.train_files:
+                features, labels = self.load_data(file, self.feature_list)
+                self.train_ds.append(self.transform(features, labels))
+            for file in self.val_files:
+                features, labels = self.load_data(file, self.feature_list)
+                self.val_ds.append(self.transform(features, labels))
+
+    @staticmethod
+    def load_data(file, feature_list):
+        ncdf = Dataset(file)
+        features = []
+        for feature in feature_list:
+            features.append(ncdf[feature][0])
+        labels = ncdf["LABELS"]
+        features = np.array(features)
+        labels = np.array(labels)
+        ncdf.close()
+        return features, labels
+
+    @staticmethod
+    def transform(features, labels):
+        features = torch.tensor(features)
+        labels = torch.tensor(labels)
+        labels = F.one_hot(labels, num_classes=3)
+        labels = labels.permute(2, 0, 1)
+        labels = labels.to(torch.float32)
+        return features, labels
 
     def train_dataloader(self):
         return DataLoader(
-            self.train_set, batch_size=self.batch_size, num_workers=self.num_workers
+            self.train_ds,
+            batch_size=self.batch_size,
+            num_workers=self.num_workers,
+            shuffle=self.shuffle,
         )
 
     def val_dataloader(self):
         return DataLoader(
-            self.val_set, batch_size=self.batch_size, num_workers=self.num_workers
-        )
-
-    def test_dataloader(self):
-        return DataLoader(
-            self.test_set, batch_size=self.batch_size, num_workers=self.num_workers
+            self.val_ds, batch_size=self.batch_size, num_workers=self.num_workers
         )

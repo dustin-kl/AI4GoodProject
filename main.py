@@ -1,31 +1,38 @@
+import os
+
+from config import config
 from parser import args
 from src.models.hyperparameters import params
-from src.data_module import DataModule
-from src.utils import Logger
-from src.models.manager import get_model, run_model
-from src.utils import Logger
+from src.data_module import ClimateNetDataModule
+from src.models.manager import get_model, train_model
+from src.utils import Logger, Generic
+
 
 def main():
-    model = args["model"]
+    files = Generic.list_files("./dataset/")
 
-    tb_logger, log_dir = Logger.setup_logger(model)
-    Logger.log_info(params[model])
+    if len(files) < 10:
+        raise Exception(
+            "The amount of data is not enough, please download the data before running again."
+        )
 
-    # Obtain datamodule based on config settings for dataset
-    data_module = DataModule(batch_size=params[model]["batch_size"])
+    model_name = args.model
+    model_params = params[model_name]
 
-    try:
-        model = get_model(model, params[model])
-    except NotImplementedError:
-        exit()
+    feature_list = config["feature_list"]
+    batch_size = model_params["batch_size"]
 
-    run_model(model, data_module, tb_logger, log_dir)
+    if args.test:
+        files = files[:10]
+    data_module = ClimateNetDataModule(files, feature_list, batch_size)
+
+    model = get_model(model_name, len(feature_list), params[model_name])
+
+    if args.test:
+        model_name = "test"
+    train_model(model, model_name, data_module)
 
 
 if __name__ == "__main__":
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
     main()
-
-    """'
-    Give list to dataloader of which features to use
-    Metric: IoU, Accuracy, F1 score
-    """

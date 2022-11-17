@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+from os.path import join
 import time
 
 from netCDF4 import Dataset
@@ -22,6 +23,8 @@ class Generic:
     @staticmethod
     def list_files(directory):
         file_list = os.listdir(directory)
+        for idx, file in enumerate(file_list):
+            file_list[idx] = join(directory, file)
         return file_list
 
     @staticmethod
@@ -45,7 +48,6 @@ class NetCDF:
             data.append(dataset[feature][:][0])
         dataset.close()
         data = np.array(data)
-        #data = np.rollaxis(data, 0, 3)
         return data
 
     @staticmethod
