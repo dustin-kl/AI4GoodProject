@@ -26,5 +26,28 @@ params = {
         "epochs": 3,
     },
     "transunet": {
+        "patches": (16, 16),
+        "hidden_size": 768,
+        "transformer": {
+            "mlp_dim": 3072,
+            "num_heads": 12,
+            "num_layers": 12,
+            "attention_dropout_rate": 0.0,
+            "dropout_rate": 0.1,
+        },
+        "classifier": "seg",
+        "representation_size": None,
+        "resnet_pretrained_path": None,
+        "pretrained_path": config.MODEL_PATH + "vit_checkpoint/imagenet21k/ViT-B_16.npz",
+        "patch_size": 16,
+        "decoder_channels": (256, 128, 64, 16),
+        "resnet": {
+            "num_layers": (3, 4, 9),
+            "width_factor": 1,
+        },
+        "skip_channels": [512, 256, 64, 16],
+        "n_classes": 2,
+        "n_skip": 3,
+        "activation": "softmax",
     }
 }

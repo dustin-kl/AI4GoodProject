@@ -26,6 +26,7 @@ class Conv2dReLU(nn.Sequential):
 
         super(Conv2dReLU, self).__init__(conv, bn, relu)
 
+
 class DecoderBlock(nn.Module):
     def __init__(
             self,
@@ -60,35 +61,44 @@ class DecoderBlock(nn.Module):
         return x
 
 class Decoder(nn.Module):
-    def __init__(self):
+    def __init__(self, params):
         super().__init__()
+        self.params = params
         head_channels = 512
-        self.conv = Conv2dReLU(
-            in_channels=768,
-            out_channels=head_channels,
+        self.conv_more = Conv2dReLU(
+            params["hidden_size"],
+            head_channels,
             kernel_size=3,
             padding=1,
             use_batchnorm=True,
         )
-        decoder_channels = (256, 128, 64, 16)
+        decoder_channels = params["decoder_channels"]
         in_channels = [head_channels] + list(decoder_channels[:-1])
         out_channels = decoder_channels
 
-        skip_channels = [512, 256, 64, 16]
+        if self.params["n_skip"] != 0:
+            skip_channels = self.params["skip_channels"]
+            for i in range(4-self.params["n_skip"]):  # re-select the skip channels according to n_skip
+                skip_channels[3-i]=0
 
-        self.blocks = [
-            DecoderBlock(in_ch, out_ch, sk_ch)
-            for in_ch, out_ch, sk_ch
-            in zip(in_channels, out_channels, skip_channels)
+        else:
+            skip_channels=[0,0,0,0]
+
+        blocks = [
+            DecoderBlock(in_ch, out_ch, sk_ch) for in_ch, out_ch, sk_ch in zip(in_channels, out_channels, skip_channels)
         ]
+        self.blocks = nn.ModuleList(blocks)
 
-    def forward(self, hidden_states, features):
+    def forward(self, hidden_states, features=None):
         B, n_patch, hidden = hidden_states.size()  # reshape from (B, n_patch, hidden) to (B, h, w, hidden)
         h, w = int(np.sqrt(n_patch)), int(np.sqrt(n_patch))
         x = hidden_states.permute(0, 2, 1)
         x = x.contiguous().view(B, hidden, h, w)
-        x = self.conv(x)
+        x = self.conv_more(x)
         for i, decoder_block in enumerate(self.blocks):
-            skip = features[i] if (i < self.config.n_skip) else None
+            if features is not None:
+                skip = features[i] if (i < self.params["n_skip"]) else None
+            else:
+                skip = None
             x = decoder_block(x, skip=skip)
         return x

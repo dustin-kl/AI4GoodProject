@@ -1,20 +1,37 @@
+import math
+import copy
+import torch
+import torch.nn as nn
+from .networks.vit_seg_modeling_resnet_skip import ResNetV2
+
+ACT2FN = {"gelu": torch.nn.functional.gelu, "relu": torch.nn.functional.relu, "swish": swish}
+
+def np2th(weights, conv=False):
+    """Possibly convert HWIO to OIHW."""
+    if conv:
+        weights = weights.transpose([3, 2, 0, 1])
+    return torch.from_numpy(weights)
+
+
+def swish(x):
+    return x * torch.sigmoid(x)
+
 class Attention(nn.Module):
-    def __init__(self, config, vis):
+    def __init__(self, params):
         super(Attention, self).__init__()
-        self.vis = vis
-        self.num_attention_heads = config.transformer["num_heads"]
-        self.attention_head_size = int(config.hidden_size / self.num_attention_heads)
+        self.num_attention_heads = params["transformer"]["num_heads"]
+        self.attention_head_size = int(params["hidden_size"] / self.num_attention_heads)
         self.all_head_size = self.num_attention_heads * self.attention_head_size
 
-        self.query = Linear(config.hidden_size, self.all_head_size)
-        self.key = Linear(config.hidden_size, self.all_head_size)
-        self.value = Linear(config.hidden_size, self.all_head_size)
+        self.query = nn.Linear(params["hidden_size"], self.all_head_size)
+        self.key = nn.Linear(params["hidden_size"], self.all_head_size)
+        self.value = nn.Linear(params["hidden_size"], self.all_head_size)
 
-        self.out = Linear(config.hidden_size, config.hidden_size)
-        self.attn_dropout = Dropout(config.transformer["attention_dropout_rate"])
-        self.proj_dropout = Dropout(config.transformer["attention_dropout_rate"])
+        self.out = nn.Linear(params["hidden_size"], params["hidden_size"])
+        self.attn_dropout = nn.Dropout(params["transformer"]["attention_dropout_rate"])
+        self.proj_dropout = nn.Dropout(params["transformer"]["attention_dropout_rate"])
 
-        self.softmax = Softmax(dim=-1)
+        self.softmax = nn.Softmax(dim=-1)
 
     def transpose_for_scores(self, x):
         new_x_shape = x.size()[:-1] + (self.num_attention_heads, self.attention_head_size)
@@ -46,12 +63,12 @@ class Attention(nn.Module):
 
 
 class Mlp(nn.Module):
-    def __init__(self, config):
+    def __init__(self, params):
         super(Mlp, self).__init__()
-        self.fc1 = Linear(config.hidden_size, config.transformer["mlp_dim"])
-        self.fc2 = Linear(config.transformer["mlp_dim"], config.hidden_size)
+        self.fc1 = nn.Linear(params["hidden_size"], params["transformer"]["mlp_dim"])
+        self.fc2 = nn.Linear(params["transformer"]["mlp_dim"], params["hidden_size"])
         self.act_fn = ACT2FN["gelu"]
-        self.dropout = Dropout(config.transformer["dropout_rate"])
+        self.dropout = nn.Dropout(params["transformer"]["dropout_rate"])
 
         self._init_weights()
 
@@ -71,41 +88,35 @@ class Mlp(nn.Module):
 
 
 class Embeddings(nn.Module):
-    def __init__(self, img_size, in_channels=3, dropout=0.25):
+    """Construct the embeddings from patch, position embeddings.
+    """
+    def __init__(self, params, img_size, in_channels=3):
         super(Embeddings, self).__init__()
         self.hybrid = None
-        grid = None
-        patch_size = -1
+        self.params = params
         img_size = _pair(img_size)
 
-        if grid is not None:   # ResNet
-            grid_size = grid
+        if params.patches.get("grid") is not None:   # ResNet
+            grid_size = params["patches"]["grid"]
             patch_size = (img_size[0] // 16 // grid_size[0], img_size[1] // 16 // grid_size[1])
             patch_size_real = (patch_size[0] * 16, patch_size[1] * 16)
             n_patches = (img_size[0] // patch_size_real[0]) * (img_size[1] // patch_size_real[1])  
             self.hybrid = True
         else:
-            patch_size = _pair(patch_size)
+            patch_size = _pair(params["patches"]["size"])
             n_patches = (img_size[0] // patch_size[0]) * (img_size[1] // patch_size[1])
             self.hybrid = False
 
         if self.hybrid:
-            num_layers = -1
-            hidden_size = -1
-            width_factor = -1
-            self.hybrid_model = ResNetV2(block_units=num_layers, width_factor=width_factor)
+            self.hybrid_model = ResNetV2(block_units=params["resnet"]["num_layers"], width_factor=params["resnet"]["width_factor"])
             in_channels = self.hybrid_model.width * 16
-        self.patch_embeddings = Conv2d(in_channels=in_channels,
-                                       out_channels=hidden_size,
+        self.patch_embeddings = nn.Conv2d(in_channels=in_channels,
+                                       out_channels=params["hidden_size"],
                                        kernel_size=patch_size,
                                        stride=patch_size)
-        self.position_embeddings = nn.Parameter(torch.zeros(1, n_patches, hidden_size))
+        self.position_embeddings = nn.Parameter(torch.zeros(1, n_patches, params["hidden_size"]))
 
-        if dropout is not None:
-            self.dropout = nn.Dropout(dropout)
-        else:
-            self.dropout = nn.Identity()
-
+        self.dropout = nn.Dropout(params["transformer"]["dropout_rate"])
 
     def forward(self, x):
         if self.hybrid:
@@ -121,13 +132,13 @@ class Embeddings(nn.Module):
         return embeddings, features
 
 class TransformerBlock(nn.Module):
-    def __init__(self, config, vis):
-        super(self).__init__()
-        self.hidden_size = config.hidden_size
-        self.attention_norm = nn.LayerNorm(config.hidden_size, eps=1e-6)
-        self.ffn_norm = nn.LayerNorm(config.hidden_size, eps=1e-6)
-        self.ffn = Mlp(config)
-        self.attn = Attention(config, vis)
+    def __init__(self, params):
+        super(TransformerBlock, self).__init__()
+        self.hidden_size = params["hidden_size"]
+        self.attention_norm = nn.LayerNorm(params["hidden_size"], eps=1e-6)
+        self.ffn_norm = nn.LayerNorm(params["hidden_size"], eps=1e-6)
+        self.ffn = Mlp(params)
+        self.attn = Attention(params)
 
     def forward(self, x):
         h = x
@@ -142,29 +153,28 @@ class TransformerBlock(nn.Module):
         return x, weights
 
 class Transformer(nn.Module):
-    def __init__(self, in_channels, out_channels):
-        super().__init__()
+    def __init__(self, params):
+        super(Transformer, self).__init__()
         self.layer = nn.ModuleList()
-        self.encoder_norm = nn.LayerNorm()
-        for _ in range(12):
-            layer = TransformerBlock(config, vis)
+        self.encoder_norm = nn.LayerNorm(params["hidden_size"], eps=1e-6)
+        for _ in range(params["transformer"]["num_layers"]):
+            layer = TransformerBlock(params)
             self.layer.append(copy.deepcopy(layer))
 
-    def forward(self, x):
-        weights = []
+    def forward(self, hidden_states):
+        attn_weights = []
         for layer_block in self.layer:
-            x, weight = layer_block(x)
-            weights.append(weight)
-        x = self.encoder_norm(x)
-        return x, weights
+            hidden_states, weights = layer_block(hidden_states)
+        encoded = self.encoder_norm(hidden_states)
+        return encoded, attn_weights
 
 class Encoder(nn.Module):
-    def __init__(self, img_size):
-        super().__init__()
-        self.embeddings = Embeddings(img_size)
-        self.transformer = Transformer()
+    def __init__(self, params, img_size):
+        super(Encoder, self).__init__()
+        self.embeddings = Embeddings(params, img_size=img_size)
+        self.transformer = Transformer(params)
 
-    def forward(self, x):
-        embedding_output, features = self.embeddings(x)
-        encoded, _ = self.transformer(embedding_output)
-        return encoded, features
+    def forward(self, input_ids):
+        embedding_output, features = self.embeddings(input_ids)
+        encoded, attn_weights = self.transformer(embedding_output)  # (B, n_patch, hidden)
+        return encoded, attn_weights, features

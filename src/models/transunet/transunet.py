@@ -7,40 +7,35 @@ from .networks.vit_seg_modeling import ResNetV2
 from encoder import Encoder
 from decoder import Decoder
 
-class SegmentationHead(nn.Module):
-    def __init__(self, parameters):
-        super().__init__()
-        self.conv2d = nn.Conv2d(
-            in_channels=parameters["in_channels"],
-            out_channels=parameters["out_channels"],
-            kernel_size=parameters["kernel_size"],
-            padding=parameters["padding"],
+class SegmentationHead(nn.Sequential):
+
+    def __init__(self, in_channels, out_channels, kernel_size=3, upsampling=1):
+        conv2d = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, padding=kernel_size // 2)
+        upsampling = nn.UpsamplingBilinear2d(scale_factor=upsampling) if upsampling > 1 else nn.Identity()
+        super().__init__(conv2d, upsampling)
+
+
+class TransUNet(nn.Module):
+    def __init__(self, params, img_size=224, num_classes=21843, zero_head=False, vis=False):
+        super(TransUNet, self).__init__()
+        self.num_classes = num_classes
+        self.zero_head = zero_head
+        self.classifier = params.classifier
+        self.encoder = Encoder(params, img_size)
+        self.decoder = Decoder(params)
+        self.segmentation_head = SegmentationHead(
+            in_channels=params['decoder_channels'][-1],
+            out_channels=params['n_classes'],
+            kernel_size=3,
         )
-        scale_factor = parameters["upsampling"]
-        if scale_factor > 1:
-            self.upsampling = nn.UpsamplingBilinear2d(
-                scale_factor=scale_factor
-            )
-        else:
-            self.upsampling = nn.Identity()
+        self.params = params
 
     def forward(self, x):
-        x = self.conv2d(x)
-        x = self.upsampling(x)
-        return x
-
-class TransUNet(pl.LightningModule):
-    def __init__(self, parameters):
-        super().__init__(parameters)
-        self.encoder = Encoder(parameters)
-        self.decoder = Decoder(parameters)
-        self.logits = SegmentationHead(parameters)
-
-
-    def forward(self, x):
-        x, features = self.encoder(x)
+        if x.size()[1] == 1:
+            x = x.repeat(1,3,1,1)
+        x, attn_weights, features = self.encoder(x)  # (B, n_patch, hidden)
         x = self.decoder(x, features)
-        logits = self.logits(x)
+        logits = self.segmentation_head(x)
         return logits
 
     def training_step(self, batch, batch_idx):
