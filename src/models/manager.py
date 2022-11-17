@@ -4,6 +4,7 @@ from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint, ModelSum
 from src.models.CNN import CNN
 from src.models.Model import Model
 from src.models.baseline import DeepLabv3_plus
+from src.models.transunet.models import TransUNet
 from src.utils import Logger
 
 
@@ -14,6 +15,8 @@ def get_model(model, parameters):
         return Model(parameters)
     if model == "baseline":
         return DeepLabv3_plus(parameters)
+    if model == "TransUNet":
+        return TransUNet(parameters)
     else:
         Logger.log_error(f"Model {model} not found.")
         raise NotImplementedError

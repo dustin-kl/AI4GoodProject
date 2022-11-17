@@ -25,4 +25,6 @@ params = {
         "batch_size": 1,
         "epochs": 3,
     },
+    "transunet": {
+    }
 }

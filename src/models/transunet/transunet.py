@@ -1,40 +1,65 @@
 import pytorch_lightning as pl
 import torch
-import torch.nn.functional as F
+import numpy as np
+import torch.nn as nn
+from .networks.vit_seg_modeling import ResNetV2
 
-from networks.vit_seg_modeling import VisionTransformer as ViT_seg
-from networks.vit_seg_modeling import CONFIGS as CONFIGS_ViT_seg
+from encoder import Encoder
+from decoder import Decoder
 
-config_vit = CONFIGS_ViT_seg["testing"]
+class SegmentationHead(nn.Module):
+    def __init__(self, parameters):
+        super().__init__()
+        self.conv2d = nn.Conv2d(
+            in_channels=parameters["in_channels"],
+            out_channels=parameters["out_channels"],
+            kernel_size=parameters["kernel_size"],
+            padding=parameters["padding"],
+        )
+        scale_factor = parameters["upsampling"]
+        if scale_factor > 1:
+            self.upsampling = nn.UpsamplingBilinear2d(
+                scale_factor=scale_factor
+            )
+        else:
+            self.upsampling = nn.Identity()
 
-net = ViT_seg(config_vit)
+    def forward(self, x):
+        x = self.conv2d(x)
+        x = self.upsampling(x)
+        return x
 
 class TransUNet(pl.LightningModule):
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+    def __init__(self, parameters):
+        super().__init__(parameters)
+        self.encoder = Encoder(parameters)
+        self.decoder = Decoder(parameters)
+        self.logits = SegmentationHead(parameters)
 
-        self.net = net
-    
+
     def forward(self, x):
-        return self.net(x)
+        x, features = self.encoder(x)
+        x = self.decoder(x, features)
+        logits = self.logits(x)
+        return logits
 
     def training_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self.forward(x)
-        loss = F.cross_entropy(y_hat, y)
+        loss = None
         return loss
 
     def validation_step(self, batch, barch_idx):
         x, y = batch
         y_hat = self.forward(x)
-        loss = F.cross_entropy(y_hat, y)
+        loss = None
         return loss
 
     def test_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self.forward(x)
-        loss = F.cross_entropy(y_hat, y)
+        loss = None
         return loss
 
     def configure_optimizers(self):
-        return torch.optim.Adam(self.parameters(), lr=0.02)
+        return None
