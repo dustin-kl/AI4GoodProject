@@ -8,3 +8,4 @@ logs/model
 .ipynb_checkpoints
 dataset
 .idea
+logs
