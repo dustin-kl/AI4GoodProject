@@ -2,10 +2,11 @@ import pytorch_lightning as pl
 import torch
 import numpy as np
 import torch.nn as nn
-from .networks.vit_seg_modeling import ResNetV2
+from torch.nn.modules.loss import CrossEntropyLoss
+from .utils import DiceLoss
 
-from encoder import Encoder
-from decoder import Decoder
+from .encoder import Encoder
+from .decoder import Decoder
 
 class SegmentationHead(nn.Sequential):
 
@@ -15,13 +16,11 @@ class SegmentationHead(nn.Sequential):
         super().__init__(conv2d, upsampling)
 
 
-class TransUNet(nn.Module):
-    def __init__(self, params, img_size=224, num_classes=21843, zero_head=False, vis=False):
+class TransUNet(pl.LightningModule):
+    def __init__(self, params, n_channels=1):
         super(TransUNet, self).__init__()
-        self.num_classes = num_classes
-        self.zero_head = zero_head
-        self.classifier = params.classifier
-        self.encoder = Encoder(params, img_size)
+        self.classifier = params["classifier"]
+        self.encoder = Encoder(params, 224)
         self.decoder = Decoder(params)
         self.segmentation_head = SegmentationHead(
             in_channels=params['decoder_channels'][-1],
@@ -29,6 +28,7 @@ class TransUNet(nn.Module):
             kernel_size=3,
         )
         self.params = params
+        self.lr = 0.01
 
     def forward(self, x):
         if x.size()[1] == 1:
@@ -41,20 +41,26 @@ class TransUNet(nn.Module):
     def training_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self.forward(x)
-        loss = None
+        ce_loss = CrossEntropyLoss()
+        dice_loss = DiceLoss(3)
+        loss = 0.5 * ce_loss(y_hat, y[:].long()) + 0.5 * dice_loss(y_hat, y, softmax=True)
         return loss
 
     def validation_step(self, batch, barch_idx):
         x, y = batch
         y_hat = self.forward(x)
-        loss = None
+        ce_loss = CrossEntropyLoss()
+        dice_loss = DiceLoss(3)
+        loss = 0.5 * ce_loss(y_hat, y[:].long()) + 0.5 * dice_loss(y_hat, y, softmax=True)
         return loss
 
     def test_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self.forward(x)
-        loss = None
+        ce_loss = CrossEntropyLoss()
+        dice_loss = DiceLoss(3)
+        loss = 0.5 * ce_loss(y_hat, y[:].long()) + 0.5 * dice_loss(y_hat, y, softmax=True)
         return loss
 
     def configure_optimizers(self):
-        return None
+        return torch.optim.Adam(self.parameters(), lr=0.01)

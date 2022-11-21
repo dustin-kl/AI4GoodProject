@@ -2,9 +2,8 @@ import math
 import copy
 import torch
 import torch.nn as nn
-from .networks.vit_seg_modeling_resnet_skip import ResNetV2
-
-ACT2FN = {"gelu": torch.nn.functional.gelu, "relu": torch.nn.functional.relu, "swish": swish}
+from .resnet_v2 import ResNetV2
+from torch.nn.modules.utils import _pair
 
 def np2th(weights, conv=False):
     """Possibly convert HWIO to OIHW."""
@@ -15,6 +14,8 @@ def np2th(weights, conv=False):
 
 def swish(x):
     return x * torch.sigmoid(x)
+
+ACT2FN = {"gelu": torch.nn.functional.gelu, "relu": torch.nn.functional.relu, "swish": swish}
 
 class Attention(nn.Module):
     def __init__(self, params):
@@ -96,7 +97,7 @@ class Embeddings(nn.Module):
         self.params = params
         img_size = _pair(img_size)
 
-        if params.patches.get("grid") is not None:   # ResNet
+        if params["patches"]["grid"] is not None:   # ResNet
             grid_size = params["patches"]["grid"]
             patch_size = (img_size[0] // 16 // grid_size[0], img_size[1] // 16 // grid_size[1])
             patch_size_real = (patch_size[0] * 16, patch_size[1] * 16)
@@ -169,9 +170,9 @@ class Transformer(nn.Module):
         return encoded, attn_weights
 
 class Encoder(nn.Module):
-    def __init__(self, params, img_size):
+    def __init__(self, params, img_size, in_channels=3):
         super(Encoder, self).__init__()
-        self.embeddings = Embeddings(params, img_size=img_size)
+        self.embeddings = Embeddings(params, img_size=img_size, in_channels=in_channels)
         self.transformer = Transformer(params)
 
     def forward(self, input_ids):
