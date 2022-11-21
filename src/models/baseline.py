@@ -1,9 +1,12 @@
 import math
+
 import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.model_zoo as model_zoo
+
+from src.metrics import iou
 
 
 class SeparableConv2d(nn.Module):
@@ -497,8 +500,8 @@ class DeepLabv3_plus(pl.LightningModule):
     def __init__(
         self,
         params,
-        nInputChannels=1,
-        n_classes=3,
+        nInputChannels=3,
+        n_classes=21,
         os=16,
         pretrained=False,
         _print=True,
@@ -509,7 +512,10 @@ class DeepLabv3_plus(pl.LightningModule):
             print("Output stride: {}".format(os))
             print("Number of Input Channels: {}".format(nInputChannels))
         super(DeepLabv3_plus, self).__init__()
+
         self.params = params
+
+        self.lr = 0.0015
 
         # Atrous Conv
         self.xception_features = Xception(nInputChannels, os, pretrained)
@@ -588,29 +594,30 @@ class DeepLabv3_plus(pl.LightningModule):
         return x
 
     def training_step(self, batch, batch_idx):
-        features, targets = batch
-        outputs = self.forward(features)
-        loss_function = nn.CrossEntropyLoss()
-        loss = loss_function(outputs, targets)
-        self.log("train_loss", loss, on_step=False, on_epoch=True, prog_bar=False)
-        return {"loss": loss}
+        x, y = batch
+        y_hat = self(x)
+        loss = F.cross_entropy(y_hat, y)
+        return loss
 
     def validation_step(self, batch, batch_idx):
-        features, targets = batch
-        outputs = self.forward(features)
-        loss_function = nn.CrossEntropyLoss()
-        loss = loss_function(outputs, targets)
-        self.log("val_loss", loss, on_step=False, on_epoch=True, prog_bar=False)
+        loss, bg_iou, tc_iou, ar_iou = self._shared_eval_step(batch, batch_idx)
+        mean_iou = (bg_iou + tc_iou + ar_iou) / 3
+        metrics = {
+            "val_loss": loss,
+            "val_bg_iou": bg_iou,
+            "val_tc_iou": tc_iou,
+            "val_ar_iou": ar_iou,
+            "val_mean_iou": mean_iou,
+        }
+        self.log_dict(metrics)
+        return metrics
 
-    def test_step(self, batch, batch_idx):
-        features, targets = batch
-        outputs = self.forward(features)
-        loss_function = nn.CrossEntropyLoss()
-        loss = loss_function(outputs, targets)
-        self.log("test_loss", loss, on_step=False, on_epoch=True, prog_bar=False)
-
-    def configure_optimizers(self):
-        return torch.optim.Adam(self.parameters())
+    def _shared_eval_step(self, batch, batch_idx):
+        x, y = batch
+        y_hat = self(x)
+        loss = F.cross_entropy(y_hat, y)
+        bg_iou, tc_iou, ar_iou = iou(y, y_hat)
+        return loss, bg_iou, tc_iou, ar_iou
 
     def freeze_bn(self):
         for m in self.modules():
@@ -622,9 +629,45 @@ class DeepLabv3_plus(pl.LightningModule):
             if isinstance(m, nn.Conv2d):
                 n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
                 m.weight.data.normal_(0, math.sqrt(2.0 / n))
+                # torch.nn.init.kaiming_normal_(m.weight)
             elif isinstance(m, nn.BatchNorm2d):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
+
+    def freeze(self):
+        # Freeze everything
+        for i, module in enumerate(self.modules()):
+            for param in module.parameters():
+                param.requires_grad = False
+
+        # Unfreeze beginning
+        # for layer in list(self.xception_features.children())[0:3]:
+        #    for param in layer.parameters():
+        #        param.requires_grad = True
+
+        # Unfreeze ending
+        # for layer in list(self.children())[7:]:
+        #    for param in layer.parameters():
+        #        param.requires_grad = True
+
+        # Unfreeze ASPPs
+        # for param in self.aspp1.parameters():
+        #    param.requires_grad = True
+
+        # for param in self.aspp2.parameters():
+        #    param.requires_grad = True
+
+        # for param in self.aspp3.parameters():
+        #    param.requires_grad = True
+
+        # for param in self.aspp4.parameters():
+        #    param.requires_grad = True
+
+        for param in self.conv1.parameters():
+            param.requires_grad = True
+
+    def configure_optimizers(self):
+        return torch.optim.Adam(self.parameters(), lr=self.lr)
 
 
 def get_1x_lr_params(model):
@@ -659,14 +702,3 @@ def get_10x_lr_params(model):
         for k in b[j].parameters():
             if k.requires_grad:
                 yield k
-
-
-if __name__ == "__main__":
-    model = DeepLabv3_plus(
-        nInputChannels=3, n_classes=21, os=16, pretrained=True, _print=True
-    )
-    model.eval()
-    image = torch.randn(1, 3, 512, 512)
-    with torch.no_grad():
-        output = model.forward(image)
-    print(output.size())

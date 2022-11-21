@@ -21,8 +21,8 @@ params = {
         "epochs": 3,
     },
     "baseline": {
-        "channels": 4,
-        "batch_size": 1,
+        "n_input_channels": 4,
+        "batch_size": 8,
         "epochs": 3,
     },
     "transunet": {
