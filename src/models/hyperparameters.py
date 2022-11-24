@@ -25,4 +25,7 @@ params = {
         "batch_size": 8,
         "epochs": 3,
     },
+    'unet': {
+        
+    }
 }

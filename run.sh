@@ -26,7 +26,7 @@ trap 'rm -rf "${TMPDIR}"' EXIT
 export TMPDIR
 
 # Binary or script to execute
-python main.py
+python main.py -m 'unet'
 
 echo "Finished at:     $(date)"
 exit 0

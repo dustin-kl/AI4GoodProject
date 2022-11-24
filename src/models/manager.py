@@ -4,6 +4,7 @@ from pytorch_lightning.loggers import TensorBoardLogger
 from src.models.CNN import CNN
 from src.models.Model import Model
 from src.models.baseline import DeepLabv3_plus
+from src.models.unet import Unet
 
 
 def get_model(model, n_channels, params):
@@ -11,6 +12,8 @@ def get_model(model, n_channels, params):
         return CNN(params)
     if model == "model":
         return Model(params)
+    if model == "unet":
+        return Unet(params)
     if model == "baseline":
         return DeepLabv3_plus(
             params, nInputChannels=n_channels, n_classes=3, _print=False
