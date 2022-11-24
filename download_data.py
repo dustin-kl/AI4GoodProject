@@ -19,7 +19,7 @@ def unzip(zip_file, destination):
 def main():
     directory = Generic.get_directory(__file__)
 
-    if args["test"]:
+    if args.test:
         url = "https://drive.google.com/uc?id=1tcbp4JUbIUyTm9qI9RyjTwRPkKr6Fdlx"
         download_folder(url, join(directory, "dataset-test.zip"))
     else:
