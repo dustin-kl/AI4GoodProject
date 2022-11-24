@@ -20,7 +20,7 @@ class TransUNet(pl.LightningModule):
     def __init__(self, params, n_channels=1):
         super(TransUNet, self).__init__()
         self.classifier = params["classifier"]
-        self.encoder = Encoder(params, 224)
+        self.encoder = Encoder(params, 224, n_channels)
         self.decoder = Decoder(params)
         self.segmentation_head = SegmentationHead(
             in_channels=params['decoder_channels'][-1],

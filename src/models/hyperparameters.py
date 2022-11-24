@@ -26,7 +26,7 @@ params = {
         "epochs": 3,
     },
     "transunet": {
-        "batch_size": 8,
+        "batch_size": 2,
         "patches": {
             "size": (8, 8),
             "grid": None,

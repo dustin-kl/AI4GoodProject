@@ -51,7 +51,8 @@ class Attention(nn.Module):
         attention_scores = torch.matmul(query_layer, key_layer.transpose(-1, -2))
         attention_scores = attention_scores / math.sqrt(self.attention_head_size)
         attention_probs = self.softmax(attention_scores)
-        weights = attention_probs if self.vis else None
+        #weights = attention_probs if self.vis else None
+        weights = None
         attention_probs = self.attn_dropout(attention_probs)
 
         context_layer = torch.matmul(attention_probs, value_layer)
@@ -115,7 +116,8 @@ class Embeddings(nn.Module):
                                        out_channels=params["hidden_size"],
                                        kernel_size=patch_size,
                                        stride=patch_size)
-        self.position_embeddings = nn.Parameter(torch.zeros(1, n_patches, params["hidden_size"]))
+        #self.position_embeddings = nn.Parameter(torch.zeros(1, n_patches, params["hidden_size"]))
+        self.position_embeddings = nn.Parameter(torch.zeros(1, 13824, params["hidden_size"]))
 
         self.dropout = nn.Dropout(params["transformer"]["dropout_rate"])
 
@@ -127,6 +129,9 @@ class Embeddings(nn.Module):
         x = self.patch_embeddings(x)  # (B, hidden. n_patches^(1/2), n_patches^(1/2))
         x = x.flatten(2)
         x = x.transpose(-1, -2)  # (B, n_patches, hidden)
+
+        print(x.shape)
+        print(self.position_embeddings.shape)
 
         embeddings = x + self.position_embeddings
         embeddings = self.dropout(embeddings)
