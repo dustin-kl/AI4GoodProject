@@ -28,8 +28,8 @@ params = {
     "transunet": {
         "batch_size": 2,
         "patches": {
-            "size": (8, 8),
-            "grid": None,
+            "size": (16, 16),
+            "grid": (16, 16),
         },
         "hidden_size": 768,
         "transformer": {
@@ -51,7 +51,7 @@ params = {
         },
         "skip_channels": [512, 256, 64, 16],
         "n_classes": 2,
-        "n_skip": 3,
+        "n_skip": 0,
         "activation": "softmax",
         "calssifier": "seg",
     }

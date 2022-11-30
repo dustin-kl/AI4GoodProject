@@ -55,7 +55,11 @@ class Attention(nn.Module):
         weights = None
         attention_probs = self.attn_dropout(attention_probs)
 
+        print("ABC")
+        print(attention_probs.shape)
+        print(value_layer.shape)
         context_layer = torch.matmul(attention_probs, value_layer)
+        print(context_layer.shape)
         context_layer = context_layer.permute(0, 2, 1, 3).contiguous()
         new_context_layer_shape = context_layer.size()[:-2] + (self.all_head_size,)
         context_layer = context_layer.view(*new_context_layer_shape)
@@ -96,12 +100,17 @@ class Embeddings(nn.Module):
         super(Embeddings, self).__init__()
         self.hybrid = None
         self.params = params
-        img_size = _pair(img_size)
-
+        #img_size = _pair(img_size)
+        img_size = (1152,768)
+        print("IMG SIZE: ", img_size)
         if params["patches"]["grid"] is not None:   # ResNet
             grid_size = params["patches"]["grid"]
+            print(grid_size)
+            print(img_size)
             patch_size = (img_size[0] // 16 // grid_size[0], img_size[1] // 16 // grid_size[1])
+            print(patch_size)
             patch_size_real = (patch_size[0] * 16, patch_size[1] * 16)
+            print(patch_size_real)
             n_patches = (img_size[0] // patch_size_real[0]) * (img_size[1] // patch_size_real[1])  
             self.hybrid = True
         else:
@@ -112,12 +121,13 @@ class Embeddings(nn.Module):
         if self.hybrid:
             self.hybrid_model = ResNetV2(block_units=params["resnet"]["num_layers"], width_factor=params["resnet"]["width_factor"])
             in_channels = self.hybrid_model.width * 16
+        print(n_patches)
         self.patch_embeddings = nn.Conv2d(in_channels=in_channels,
                                        out_channels=params["hidden_size"],
                                        kernel_size=patch_size,
                                        stride=patch_size)
-        #self.position_embeddings = nn.Parameter(torch.zeros(1, n_patches, params["hidden_size"]))
-        self.position_embeddings = nn.Parameter(torch.zeros(1, 13824, params["hidden_size"]))
+        self.position_embeddings = nn.Parameter(torch.zeros(1, n_patches, params["hidden_size"]))
+        #self.position_embeddings = nn.Parameter(torch.zeros(1, 13824, params["hidden_size"]))
 
         self.dropout = nn.Dropout(params["transformer"]["dropout_rate"])
 
@@ -126,11 +136,13 @@ class Embeddings(nn.Module):
             x, features = self.hybrid_model(x)
         else:
             features = None
+        print(self.hybrid)
+        print("X shape: ", x.shape)
         x = self.patch_embeddings(x)  # (B, hidden. n_patches^(1/2), n_patches^(1/2))
         x = x.flatten(2)
         x = x.transpose(-1, -2)  # (B, n_patches, hidden)
 
-        print(x.shape)
+        print("X ", x.shape)
         print(self.position_embeddings.shape)
 
         embeddings = x + self.position_embeddings
@@ -183,4 +195,5 @@ class Encoder(nn.Module):
     def forward(self, input_ids):
         embedding_output, features = self.embeddings(input_ids)
         encoded, attn_weights = self.transformer(embedding_output)  # (B, n_patch, hidden)
+        print(encoded.shape)
         return encoded, attn_weights, features

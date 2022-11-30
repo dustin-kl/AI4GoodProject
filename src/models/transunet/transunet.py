@@ -20,6 +20,7 @@ class TransUNet(pl.LightningModule):
     def __init__(self, params, n_channels=1):
         super(TransUNet, self).__init__()
         self.classifier = params["classifier"]
+        print(n_channels)
         self.encoder = Encoder(params, 224, n_channels)
         self.decoder = Decoder(params)
         self.segmentation_head = SegmentationHead(
@@ -35,6 +36,7 @@ class TransUNet(pl.LightningModule):
             x = x.repeat(1,3,1,1)
         x, attn_weights, features = self.encoder(x)  # (B, n_patch, hidden)
         x = self.decoder(x, features)
+        print(x.shape)
         logits = self.segmentation_head(x)
         return logits
 
@@ -51,6 +53,8 @@ class TransUNet(pl.LightningModule):
         y_hat = self.forward(x)
         ce_loss = CrossEntropyLoss()
         dice_loss = DiceLoss(3)
+        print("YHAT", y_hat.shape)
+        print("Y", y.shape)
         loss = 0.5 * ce_loss(y_hat, y[:].long()) + 0.5 * dice_loss(y_hat, y, softmax=True)
         return loss
 

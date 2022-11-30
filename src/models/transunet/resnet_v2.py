@@ -118,7 +118,7 @@ class ResNetV2(nn.Module):
         self.width = width
 
         self.root = nn.Sequential(OrderedDict([
-            ('conv', StdConv2d(3, width, kernel_size=7, stride=2, bias=False, padding=3)),
+            ('conv', StdConv2d(4, width, kernel_size=7, stride=2, bias=False, padding=3)),
             ('gn', nn.GroupNorm(32, width, eps=1e-6)),
             ('relu', nn.ReLU(inplace=True)),
             # ('pool', nn.MaxPool2d(kernel_size=3, stride=2, padding=0))
@@ -141,7 +141,8 @@ class ResNetV2(nn.Module):
 
     def forward(self, x):
         features = []
-        b, c, in_size, _ = x.size()
+        b, c, in_size, eps = x.size()
+        print(b, c, in_size, eps)
         x = self.root(x)
         features.append(x)
         x = nn.MaxPool2d(kernel_size=3, stride=2, padding=0)(x)
@@ -152,7 +153,10 @@ class ResNetV2(nn.Module):
                 pad = right_size - x.size()[2]
                 assert pad < 3 and pad > 0, "x {} should {}".format(x.size(), right_size)
                 feat = torch.zeros((b, x.size()[1], right_size, right_size), device=x.device)
-                feat[:, :, 0:x.size()[2], 0:x.size()[3]] = x[:]
+                print("FEAT", feat.size())
+                print("right", right_size)
+                print("X", x.size())
+                feat[:, :, 0:x.size()[2], 0:x.size()[3]] = x[:,:,:,:192]
             else:
                 feat = x
             features.append(feat)
