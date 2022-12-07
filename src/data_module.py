@@ -46,11 +46,11 @@ class ClimateNetDataModule(pl.LightningDataModule):
 
     @staticmethod
     def transform(features, labels):
-        features = torch.tensor(features)
+        features = torch.tensor(features).to(torch.float16)
         labels = torch.tensor(labels)
         labels = F.one_hot(labels, num_classes=3)
         labels = labels.permute(2, 0, 1)
-        labels = labels.to(torch.float32)
+        labels = labels.to(torch.float16)
         return features, labels
 
     def train_dataloader(self):

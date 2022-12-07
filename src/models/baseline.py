@@ -73,7 +73,7 @@ class SeparableConv2d_same(nn.Module):
         x = self.pointwise(x)
         return x
 
-
+#        self.block1 = Block(64, 128, reps=2, stride=2, start_with_relu=False)
 class Block(nn.Module):
     def __init__(
         self,
@@ -566,14 +566,14 @@ class DeepLabv3_plus(pl.LightningModule):
         x3 = self.aspp3(x)
         x4 = self.aspp4(x)
         x5 = self.global_avg_pool(x)
-        x5 = F.upsample(x5, size=x4.size()[2:], mode="bilinear", align_corners=True)
+        x5 = F.interpolate(x5, size=x4.size()[2:], mode="bilinear", align_corners=True)
 
         x = torch.cat((x1, x2, x3, x4, x5), dim=1)
 
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
-        x = F.upsample(
+        x = F.interpolate(
             x,
             size=(
                 int(math.ceil(input.size()[-2] / 4)),
@@ -589,7 +589,7 @@ class DeepLabv3_plus(pl.LightningModule):
 
         x = torch.cat((x, low_level_features), dim=1)
         x = self.last_conv(x)
-        x = F.upsample(x, size=input.size()[2:], mode="bilinear", align_corners=True)
+        x = F.interpolate(x, size=input.size()[2:], mode="bilinear", align_corners=True)
 
         return x
 
@@ -609,7 +609,7 @@ class DeepLabv3_plus(pl.LightningModule):
             "val_ar_iou": ar_iou,
             "val_mean_iou": mean_iou,
         }
-        self.log_dict(metrics)
+        self.log_dict(metrics, prog_bar=True)
         return metrics
 
     def _shared_eval_step(self, batch, batch_idx):
