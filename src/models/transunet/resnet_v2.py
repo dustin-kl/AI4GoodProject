@@ -141,24 +141,24 @@ class ResNetV2(nn.Module):
 
     def forward(self, x):
         features = []
-        b, c, in_size, eps = x.size()
-        print(b, c, in_size, eps)
+        b, c, h, w = x.shape
+        #print("RESNET INPUT SHAPE: ", x.shape)
         x = self.root(x)
         features.append(x)
         x = nn.MaxPool2d(kernel_size=3, stride=2, padding=0)(x)
         for i in range(len(self.body)-1):
             x = self.body[i](x)
-            right_size = int(in_size / 4 / (i+1))
-            if x.size()[2] != right_size:
-                pad = right_size - x.size()[2]
-                assert pad < 3 and pad > 0, "x {} should {}".format(x.size(), right_size)
-                feat = torch.zeros((b, x.size()[1], right_size, right_size), device=x.device)
-                print("FEAT", feat.size())
-                print("right", right_size)
-                print("X", x.size())
-                feat[:, :, 0:x.size()[2], 0:x.size()[3]] = x[:,:,:,:192]
+            right_size_h = int(h / 4 / (i+1))
+            right_size_w = int(w / 4 / (i+1))
+            if h != right_size_h and w != right_size_w:
+                pad_h = right_size_h - h
+                pad_w = right_size_w - w
+                #assert pad < 3 and pad > 0, "x {} should {}".format(x.size(), right_size)
+                feat = torch.zeros((b, x.size()[1], right_size_h, right_size_w), device=x.device)
+                feat[:, :, 0:x.size()[2], 0:x.size()[3]] = x[:]
             else:
                 feat = x
             features.append(feat)
         x = self.body[-1](x)
+        #print("RESNET OUT", x.shape)
         return x, features[::-1]

@@ -26,7 +26,7 @@ params = {
         "epochs": 3,
     },
     "transunet": {
-        "batch_size": 2,
+        "batch_size": 8,
         "patches": {
             "size": (16, 16),
             "grid": (16, 16),
@@ -50,8 +50,8 @@ params = {
             "width_factor": 1,
         },
         "skip_channels": [512, 256, 64, 16],
-        "n_classes": 2,
-        "n_skip": 0,
+        "n_classes": 3,
+        "n_skip": 3,
         "activation": "softmax",
         "calssifier": "seg",
     }

@@ -53,14 +53,12 @@ class DecoderBlock(nn.Module):
         self.up = nn.UpsamplingBilinear2d(scale_factor=2)
 
     def forward(self, x, skip=None):
-        print("DBF", x.shape)
         x = self.up(x)
-        print("DBF post skip", x.shape)
         if skip is not None:
+            #print("SKIP SHAPE: ", skip.shape)
+            #print("X SHAPE: ", x.shape)
             x = torch.cat([x, skip], dim=1)
-        print("DBF1", x.shape)
         x = self.conv1(x)
-        print("DBF2", x.shape)
         x = self.conv2(x)
         return x
 
@@ -87,7 +85,7 @@ class Decoder(nn.Module):
 
         else:
             skip_channels=[0,0,0,0]
-        print("skip_channels", skip_channels)
+        #print("SKIP", skip_channels)
         blocks = [
             DecoderBlock(in_ch, out_ch, sk_ch) for in_ch, out_ch, sk_ch in zip(in_channels, out_channels, skip_channels)
         ]
@@ -95,21 +93,22 @@ class Decoder(nn.Module):
         self.params = params
 
     def forward(self, hidden_states, features=None):
-        print(hidden_states.shape)
         B, n_patch, hidden = hidden_states.size()  # reshape from (B, n_patch, hidden) to (B, h, w, hidden)
-        h, w = int(np.sqrt(n_patch)), int(np.sqrt(n_patch))
-        p_h, p_w = self.params["patches"]["grid"]
-        h, w = int(1152/64), int(768/48)
-        print("H", h, "W", w)
-        print("HS", hidden_states.shape)
+        h, w = int(768/16), int(1152/16)
+        #h, w = 16, 18
+        #print("DECODER IN", B, n_patch, hidden, h, w)
         x = hidden_states.permute(0, 2, 1)
-        print(x.shape)
+        #print("DECODER IN", x.shape)
         x = x.contiguous().view(B, hidden, h, w)
+        #print("DECODER IN RES", x.shape)
         x = self.conv_more(x)
+        #print("DECODER IN CONV", x.shape)
         for i, decoder_block in enumerate(self.blocks):
             if features is not None:
                 skip = features[i] if (i < self.params["n_skip"]) else None
             else:
                 skip = None
             x = decoder_block(x, skip=skip)
+            #print("BLOCK", i, x.shape)
+        #print("DECODER OUT", x.shape)
         return x
