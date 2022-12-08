@@ -30,6 +30,7 @@ def main():
     print(f'Create Model {model_name}')
     model = get_model(model_name, len(feature_list), params[model_name])
 
+    print('Start Training')
     if args.test:
         model_name = "test"
     train_model(model, model_name, data_module)

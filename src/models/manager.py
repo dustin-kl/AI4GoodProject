@@ -1,5 +1,7 @@
 from pytorch_lightning import Trainer
 from pytorch_lightning.loggers import TensorBoardLogger
+from pytorch_lightning.loggers import WandbLogger
+
 
 from src.models.CNN import CNN
 from src.models.Model import Model
@@ -26,19 +28,22 @@ def train_model(model, model_name, data_module, trainer=None):
     log_dir = "./runs/"
     log_name = f"{model_name} - lr={model.lr}"
     logger = TensorBoardLogger(log_dir, name=log_name)
+    wandb_logger = WandbLogger()
 
-    logger.log_hyperparams(model.params)
-    logger.log_graph(model)
+    wandb_logger.experiment.config.update(model.hparams)
+
+    # wandb_logger.log(model)
 
     if trainer is None:
         trainer = Trainer(
-            accelerator="cpu",
+            accelerator="gpu",
             enable_progress_bar=False,
-            max_epochs=1,
-            logger=[logger],
-            log_every_n_steps=1,
+            max_epochs=100,
+            logger=wandb_logger,
+            log_every_n_steps=50,
         )
     else:
-        trainer.logger = [logger]
+        trainer.logger = wandb_logger
 
+    print("Start Training Now")
     trainer.fit(model, datamodule=data_module)

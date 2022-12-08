@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --mail-type=ALL                     # mail configuration: NONE, BEGIN, END, FAIL, REQUEUE, ALL
+#SBATCH --mail-type=NONE                     # mail configuration: NONE, BEGIN, END, FAIL, REQUEUE, ALL
 #SBATCH --output=logs/%j.out                 # where to store the output (%j is the JOBID), subdirectory must exist
 #SBATCH --error=logs/%j.err                  # where to store error messages
 #SBATCH --gres=gpu:1
@@ -26,7 +26,7 @@ trap 'rm -rf "${TMPDIR}"' EXIT
 export TMPDIR
 
 # Binary or script to execute
-python main.py -m 'unet'
+python main.py -m 'unet' -t false
 
 echo "Finished at:     $(date)"
 exit 0

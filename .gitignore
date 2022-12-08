@@ -9,4 +9,6 @@ logs/model
 dataset
 .idea
 logs
+lightning_logs
+wandb
 runs/*
