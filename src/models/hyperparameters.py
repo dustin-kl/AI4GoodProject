@@ -26,7 +26,7 @@ params = {
         "epochs": 3,
     },
     "transunet": {
-        "batch_size": 8,
+        "batch_size": 2,
         "patches": {
             "size": (16, 16),
             "grid": (16, 16),
@@ -37,7 +37,7 @@ params = {
             "num_heads": 12,
             "num_layers": 12,
             "attention_dropout_rate": 0.0,
-            "dropout_rate": 0.1,
+            "dropout_rate": 0.5,
         },
         "classifier": "seg",
         "representation_size": None,

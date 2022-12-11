@@ -3,6 +3,7 @@ import copy
 import torch
 import torch.nn as nn
 from .resnet_v2 import ResNetV2
+from .cnn import CNN
 from torch.nn.modules.utils import _pair
 
 def np2th(weights, conv=False):
@@ -115,6 +116,7 @@ class Embeddings(nn.Module):
         #print("NPATCH", n_patches)
         if self.hybrid:
             self.hybrid_model = ResNetV2(block_units=params["resnet"]["num_layers"], width_factor=params["resnet"]["width_factor"])
+            #self.hybrid_model = CNN(in_channels=4)
             in_channels = self.hybrid_model.width * 16
         #self.patch_embeddings = nn.Conv2d(in_channels=in_channels,
         #                               out_channels=params["hidden_size"],
@@ -192,5 +194,6 @@ class Encoder(nn.Module):
         embedding_output, features = self.embeddings(input_ids)
         #print("EMB OUT", embedding_output.shape)
         encoded, attn_weights = self.transformer(embedding_output)  # (B, n_patch, hidden)
+        #encoded, attn_weights = embedding_output, None
         #print("ENC OUT", encoded.shape)
         return encoded, attn_weights, features

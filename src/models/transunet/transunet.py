@@ -31,7 +31,7 @@ class TransUNet(pl.LightningModule):
             kernel_size=3,
         )
         self.params = params
-        self.lr = 0.01
+        self.lr = 0.0001
 
     def forward(self, x):
         if x.size()[1] == 1:
@@ -46,15 +46,20 @@ class TransUNet(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self.forward(x)
-        ce_loss = CrossEntropyLoss()
+        ce_loss = CrossEntropyLoss(weight=torch.Tensor([0.35, 70, 5.9]))
         #dice_loss = DiceLoss(3)
         #loss = 0.5 * ce_loss(y_hat, y) + 0.5 * dice_loss(y_hat, y, softmax=True)
+        #print(y_hat[:,:,:10,:10].shape)
+        #print(y_hat[:,:,:10,:10])
+        #print(y[:,:,:10,:10].shape)
+        #print(y[:,:,:10,:10])
+        #print(ce_loss(y_hat, y))
         return ce_loss(y_hat, y)
 
     def _shared_eval_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self(x)
-        loss = CrossEntropyLoss()(y_hat, y)
+        loss = CrossEntropyLoss(weight=torch.Tensor([0.35, 70, 5.9]))(y_hat, y)
         bg_iou, tc_iou, ar_iou = iou(y, y_hat)
         return loss, bg_iou, tc_iou, ar_iou
     

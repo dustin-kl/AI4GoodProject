@@ -108,6 +108,12 @@ class Decoder(nn.Module):
                 skip = features[i] if (i < self.params["n_skip"]) else None
             else:
                 skip = None
+            if skip is not None:
+                #print("SKIP", i, skip.shape)
+                pass
+            else:
+                #print("SKIP", i, skip)
+                pass
             x = decoder_block(x, skip=skip)
             #print("BLOCK", i, x.shape)
         #print("DECODER OUT", x.shape)
