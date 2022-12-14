@@ -34,7 +34,7 @@ def train_model(model, model_name, data_module, trainer=None):
         trainer = Trainer(
             accelerator="gpu",
             enable_progress_bar=True,
-            max_epochs=35,
+            max_epochs=25,
             logger=[logger],
             log_every_n_steps=1,
         )

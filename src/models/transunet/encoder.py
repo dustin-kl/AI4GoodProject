@@ -115,8 +115,8 @@ class Embeddings(nn.Module):
         #print("patch_size", patch_size)
         #print("NPATCH", n_patches)
         if self.hybrid:
-            self.hybrid_model = ResNetV2(block_units=params["resnet"]["num_layers"], width_factor=params["resnet"]["width_factor"])
-            #self.hybrid_model = CNN(in_channels=4)
+            #self.hybrid_model = ResNetV2(block_units=params["resnet"]["num_layers"], width_factor=params["resnet"]["width_factor"])
+            self.hybrid_model = CNN(in_channels=4)
             in_channels = self.hybrid_model.width * 16
         #self.patch_embeddings = nn.Conv2d(in_channels=in_channels,
         #                               out_channels=params["hidden_size"],
