@@ -35,7 +35,7 @@ params = {
         "transformer": {
             "mlp_dim": 3072,
             "num_heads": 12,
-            "num_layers": 12,
+            "num_layers": 5,
             "attention_dropout_rate": 0.0,
             "dropout_rate": 0.5,
         },
