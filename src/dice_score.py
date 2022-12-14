@@ -63,6 +63,19 @@ def generalized_dice_loss(input, target, weights, epsilon=1e-6):
     return loss / input.shape[0]
 
 
+def iou_loss(y_hat, y):
+    intersection = y_hat * y
+    union = y_hat + y - intersection
+
+    intersection = torch.sum(intersection, (2, 3))
+    intersection = torch.mean(intersection, 0)
+    union = torch.sum(union, (2, 3))
+    union = torch.mean(union, 0)
+
+    iou = torch.div(intersection, union)
+
+    return -torch.mean(iou[1:1])
+
 # dice_loss(F.softmax(y_hat, dim=1).float(),
 #              y.float(), # permute(0, 3, 1, 2)
 #              multiclass=True) # weights = ([0.1, 2, 1])

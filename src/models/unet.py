@@ -10,7 +10,7 @@ import torchvision.transforms as transforms
 from torch import optim
 from torch.utils.data import DataLoader, random_split
 from torch.utils.data.distributed import DistributedSampler
-from src.dice_score import dice_loss, generalized_dice_loss
+from src.dice_score import dice_loss, generalized_dice_loss, iou_loss
 from src.metrics import iou
 from torchvision.ops.focal_loss import sigmoid_focal_loss
 
@@ -119,6 +119,7 @@ class Unet(pl.LightningModule):
             self.out = nn.Conv2d(16, self.n_classes, kernel_size=1)
 
     def forward(self, x):
+        # x = x.float()
         x1 = self.inc(x)
         x2 = self.down1(x1)
         x3 = self.down2(x2)
@@ -133,18 +134,22 @@ class Unet(pl.LightningModule):
     def training_step(self, batch, batch_nb):
         x, y = batch
         y_hat = self.forward(x) # batch_size, classes, x, y
-        ce_loss = F.cross_entropy(y_hat, y, weight=torch.Tensor(self.hyperparams['class_weights']).cuda())
-        # loss_focal = sigmoid_focal_loss(y_hat, y, alpha=0.5, gamma=2, reduction='mean')
-        dice_weights = torch.Tensor(self.hyperparams['class_weights']).cuda()**2 / torch.sum(torch.Tensor(self.hyperparams['class_weights']).cuda())
-        loss_dice = generalized_dice_loss(F.softmax(y_hat, dim=1).float(), 
-                                        y.float(), 
-                                        dice_weights)
+        # ce_loss = F.cross_entropy(y_hat, y, weight=torch.Tensor(self.hyperparams['class_weights']).cuda())
+        # # loss_focal = sigmoid_focal_loss(y_hat, y, alpha=0.5, gamma=2, reduction='mean')
+        # dice_weights = torch.Tensor(self.hyperparams['class_weights']).cuda()**2 / torch.sum(torch.Tensor(self.hyperparams['class_weights']).cuda())
+        # loss_dice = generalized_dice_loss(F.softmax(y_hat, dim=1).float(), 
+        #                                 y.float(), 
+        #                                 dice_weights)
 
-        self.log("train_ce_loss", ce_loss)
-        self.log("train_dice_loss", loss_dice)
-        # self.log("train_focal_loss", loss_focal)
-        # loss = 30 * loss_focal + ce_loss + loss_dice
-        loss = loss_dice + 3 * ce_loss
+        # self.log("train_ce_loss", ce_loss)
+        # self.log("train_dice_loss", loss_dice)
+        # # self.log("train_focal_loss", loss_focal)
+        # # loss = 30 * loss_focal + ce_loss + loss_dice
+        # loss = loss_dice + 3 * ce_loss
+        print('I am training')
+
+        loss = iou_loss(y_hat, y)
+        self.log('train_iou_loss', loss)
 
         tensorboard_logs = {'train_loss': loss}
         #print(f'train_loss_at_step: {loss}')
@@ -162,18 +167,20 @@ class Unet(pl.LightningModule):
         x, y = batch
         y_hat = self.forward(x)
         # print(y.shape, y_hat.shape)
-        ce_loss = F.cross_entropy(y_hat, y, weight=torch.Tensor(self.hyperparams['class_weights']).cuda())
-        # loss_focal = sigmoid_focal_loss(y_hat, y, alpha=0.5, gamma=2, reduction='mean')
-        dice_weights = torch.Tensor(self.hyperparams['class_weights']).cuda()**2 / torch.sum(torch.Tensor(self.hyperparams['class_weights']).cuda())
-        loss_dice = generalized_dice_loss(F.softmax(y_hat, dim=1).float(), 
-                                        y.float(), 
-                                        dice_weights) 
+        # ce_loss = F.cross_entropy(y_hat, y, weight=torch.Tensor(self.hyperparams['class_weights']).cuda())
+        # # loss_focal = sigmoid_focal_loss(y_hat, y, alpha=0.5, gamma=2, reduction='mean')
+        # dice_weights = torch.Tensor(self.hyperparams['class_weights']).cuda()**2 / torch.sum(torch.Tensor(self.hyperparams['class_weights']).cuda())
+        # loss_dice = generalized_dice_loss(F.softmax(y_hat, dim=1).float(), 
+        #                                 y.float(), 
+        #                                 dice_weights) 
 
-        self.log("val_ce_loss", ce_loss)
-        self.log("val_dice_loss", loss_dice)
-        # self.log("val_focal_loss", loss_focal)
-        # loss = 30 * loss_focal + ce_loss + loss_dice
-        loss = loss_dice + 3 * ce_loss
+        # self.log("val_ce_loss", ce_loss)
+        # self.log("val_dice_loss", loss_dice)
+        # # self.log("val_focal_loss", loss_focal)
+        # # loss = 30 * loss_focal + ce_loss + loss_dice
+        # loss = loss_dice + 3 * ce_loss
+        loss = iou_loss(y_hat, y.float())
+        self.log('val_iou_loss', loss)
 
         #print(f'val_loss_at_step: {loss}')
         bg_iou, tc_iou, ar_iou = iou(y, y_hat)

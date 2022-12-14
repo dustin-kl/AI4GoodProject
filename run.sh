@@ -3,7 +3,7 @@
 #SBATCH --mail-type=NONE                     # mail configuration: NONE, BEGIN, END, FAIL, REQUEUE, ALL
 #SBATCH --output=logs/%j.out                 # where to store the output (%j is the JOBID), subdirectory must exist
 #SBATCH --error=logs/%j.err                  # where to store error messages
-#SBATCH --gres=gpu:1
+#SBATCH --gres=gpu:0
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=100G
 
