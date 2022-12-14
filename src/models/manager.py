@@ -32,9 +32,9 @@ def train_model(model, model_name, data_module, trainer=None):
 
     if trainer is None:
         trainer = Trainer(
-            accelerator="cpu",
+            accelerator="gpu",
             enable_progress_bar=True,
-            max_epochs=3,
+            max_epochs=35,
             logger=[logger],
             log_every_n_steps=1,
         )
