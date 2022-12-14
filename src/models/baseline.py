@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.model_zoo as model_zoo
 
-from src.metrics import iou
+from src.metrics import iou, iou_loss
 
 
 class SeparableConv2d(nn.Module):
@@ -590,13 +590,15 @@ class DeepLabv3_plus(pl.LightningModule):
         x = torch.cat((x, low_level_features), dim=1)
         x = self.last_conv(x)
         x = F.interpolate(x, size=input.size()[2:], mode="bilinear", align_corners=True)
+        
+        x = F.softmax(x, dim=1)
 
         return x
 
     def training_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self(x)
-        loss = F.cross_entropy(y_hat, y)
+        loss = iou_loss(y_hat, y)
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -615,7 +617,7 @@ class DeepLabv3_plus(pl.LightningModule):
     def _shared_eval_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self(x)
-        loss = F.cross_entropy(y_hat, y)
+        loss = iou_loss(y_hat, y)
         bg_iou, tc_iou, ar_iou = iou(y, y_hat)
         return loss, bg_iou, tc_iou, ar_iou
 

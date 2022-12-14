@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import pytorch_lightning as pl
 
-from src.metrics import iou
+from src.metrics import iou, iou_loss
 
 
 def fixed_padding(inputs, kernel_size, rate):
@@ -354,12 +354,15 @@ class DeepLabV3PlusAttention(pl.LightningModule):
 
         x = F.interpolate(x, size=in_size[2:], mode="bilinear", align_corners=True)
 
+        #x = F.softmax(x, dim=1)
+
         return x
 
     def training_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self(x)
         loss = F.cross_entropy(y_hat, y)
+        self.log("train_loss", loss)
         return loss
 
     def validation_step(self, batch, batch_idx):
