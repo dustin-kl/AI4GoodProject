@@ -32,7 +32,7 @@ class TransUNet(pl.LightningModule):
         )
         self.params = params
         self.lr = 0.0001
-        self.weights = [2.5, 21.0, 21.0]
+        self.weights = [3.0, 7.0, 21.0]
 
     def forward(self, x):
         if x.size()[1] == 1:
