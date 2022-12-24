@@ -8,7 +8,7 @@ from sklearn.model_selection import train_test_split
 
 
 class ClimateNetDataModule(pl.LightningDataModule):
-    def __init__(self, files, feature_list, batch_size, num_workers=8, shuffle=True):
+    def __init__(self, files, feature_list, batch_size, num_workers=4, shuffle=True):
         super().__init__()
         self.files = files
         self.batch_size = batch_size
@@ -48,11 +48,12 @@ class ClimateNetDataModule(pl.LightningDataModule):
 
     @staticmethod
     def transform(features, labels):
-        features = torch.tensor(features)
+        features = torch.tensor(features) #.to(torch.float16)
+        features = features.to(torch.float16)
         labels = torch.tensor(labels)
         labels = F.one_hot(labels, num_classes=3)
-        labels = labels.permute(2, 0, 1)
-        labels = labels.to(torch.float32)
+        labels = labels.permute(2, 0, 1) # batch, classes, (x,y)
+        labels = labels.to(torch.float16)
         return features, labels
 
     def train_dataloader(self):
