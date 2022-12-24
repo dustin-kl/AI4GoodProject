@@ -25,3 +25,17 @@ def iou(y, y_hat):
     ar_iou = torch.nanmean(torch.div(ar_inters + epsilon, ar_unions + epsilon))
 
     return bg_iou, tc_iou, ar_iou
+
+
+def iou_loss(y_hat, y):
+    intersection = y_hat * y
+    union = y_hat + y - intersection
+
+    intersection = torch.sum(intersection, (2, 3))
+    intersection = torch.mean(intersection, 0)
+    union = torch.sum(union, (2, 3))
+    union = torch.mean(union, 0)
+
+    iou = torch.div(intersection, union)
+
+    return -torch.mean(iou[1:])

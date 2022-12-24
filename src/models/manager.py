@@ -6,11 +6,12 @@ from pytorch_lightning.loggers import WandbLogger
 from src.models.CNN import CNN
 from src.models.Model import Model
 from src.models.baseline import DeepLabv3_plus
+from src.models.deeplabv3attention import DeepLabV3PlusAttention
 from src.models.unet import Unet
 from src.models.transunet.transunet import TransUNet
 
 
-def get_model(model, n_channels, params):
+def get_model(model, n_channels=4, params=None):
     if model == "cnn":
         return CNN(params)
     if model == "model":
@@ -21,6 +22,8 @@ def get_model(model, n_channels, params):
         return DeepLabv3_plus(
             params, nInputChannels=n_channels, n_classes=3, _print=False
         )
+    if model == "attention":
+        return DeepLabV3PlusAttention(3)
     if model == "transunet":
         return TransUNet(params, n_channels)
     else:
