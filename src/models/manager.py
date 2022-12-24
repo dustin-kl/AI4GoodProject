@@ -4,6 +4,7 @@ from pytorch_lightning.loggers import TensorBoardLogger
 from src.models.CNN import CNN
 from src.models.Model import Model
 from src.models.baseline import DeepLabv3_plus
+from src.models.transunet.transunet import TransUNet
 
 
 def get_model(model, n_channels, params):
@@ -15,6 +16,8 @@ def get_model(model, n_channels, params):
         return DeepLabv3_plus(
             params, nInputChannels=n_channels, n_classes=3, _print=False
         )
+    if model == "transunet":
+        return TransUNet(params, n_channels)
     else:
         raise NotImplementedError
 
@@ -29,9 +32,9 @@ def train_model(model, model_name, data_module, trainer=None):
 
     if trainer is None:
         trainer = Trainer(
-            accelerator="cpu",
-            enable_progress_bar=False,
-            max_epochs=1,
+            accelerator="gpu",
+            enable_progress_bar=True,
+            max_epochs=25,
             logger=[logger],
             log_every_n_steps=1,
         )
