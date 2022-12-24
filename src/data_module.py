@@ -4,10 +4,11 @@ import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, random_split
+from sklearn.model_selection import train_test_split
 
 
 class ClimateNetDataModule(pl.LightningDataModule):
-    def __init__(self, files, feature_list, batch_size, num_workers=8, shuffle=True):
+    def __init__(self, files, feature_list, batch_size, num_workers=4, shuffle=True):
         super().__init__()
         self.files = files
         self.batch_size = batch_size
@@ -19,7 +20,8 @@ class ClimateNetDataModule(pl.LightningDataModule):
         self.train_ds = self.val_ds = None
 
     def prepare_data(self):
-        self.train_files, self.val_files = random_split(self.files, [0.8, 0.2])
+        #self.train_files, self.val_files = random_split(self.files, [0.8, 0.2])
+        self.train_files, self.val_files = train_test_split(self.files, test_size=0.2)
 
     def setup(self, stage: str = None):
         if stage == "fit":

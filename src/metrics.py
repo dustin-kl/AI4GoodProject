@@ -2,6 +2,7 @@ import torch
 
 
 def iou(y, y_hat):
+    epsilon = 1e-6
     max_idx = torch.argmax(y_hat, 1, keepdim=True)
     one_hot = torch.FloatTensor(y_hat.shape).to(torch.device(y.device))
     one_hot.zero_()
@@ -19,9 +20,9 @@ def iou(y, y_hat):
     ar_inters = torch.sum(torch.clone(intersection[:, 2]), (1, 2))
     ar_unions = torch.sum(torch.clone(union[:, 2]), (1, 2))
 
-    bg_iou = torch.nanmean(torch.div(bg_inters, bg_unions))
-    tc_iou = torch.nanmean(torch.div(tc_inters, tc_unions))
-    ar_iou = torch.nanmean(torch.div(ar_inters, ar_unions))
+    bg_iou = torch.nanmean(torch.div(bg_inters + epsilon, bg_unions + epsilon))
+    tc_iou = torch.nanmean(torch.div(tc_inters + epsilon, tc_unions + epsilon))
+    ar_iou = torch.nanmean(torch.div(ar_inters + epsilon, ar_unions + epsilon))
 
     return bg_iou, tc_iou, ar_iou
 

@@ -8,4 +8,8 @@ logs/model
 .ipynb_checkpoints
 dataset
 .idea
+runs
 logs
+lightning_logs
+wandb
+runs/*

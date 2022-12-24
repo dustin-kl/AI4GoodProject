@@ -24,10 +24,13 @@ def main():
 
     if args.test:
         files = files[:10]
+    print('create Datamodule')
     data_module = ClimateNetDataModule(files, feature_list, batch_size)
 
+    print(f'Create Model {model_name}')
     model = get_model(model_name, len(feature_list), params[model_name])
 
+    print('Start Training')
     if args.test:
         model_name = "test"
     train_model(model, model_name, data_module)
