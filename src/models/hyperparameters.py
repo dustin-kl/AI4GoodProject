@@ -30,7 +30,8 @@ params = {
         "batch_size": 3,
         "epochs": 40,
         "n_classes": 3,
-    "transunet": {
+    },
+    'transunet': {
         "batch_size": 2,
         "patches": {
             "size": (16, 16),
@@ -60,4 +61,5 @@ params = {
         "activation": "softmax",
         "calssifier": "seg",
     }
+
 }
