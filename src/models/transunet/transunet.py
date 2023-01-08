@@ -40,35 +40,23 @@ class TransUNet(pl.LightningModule):
             x = x.repeat(1,3,1,1)
         x, attn_weights, features = self.encoder(x)  # (B, n_patch, hidden)
         x = self.decoder(x, features)
-        #print("DECODER OUTPUT SHAPE: ", x.shape)
         logits = self.segmentation_head(x)
         logits = F.softmax(logits, dim=1)
-        #print("LOGITS SHAPE: ", logits.shape)
         return logits
 
     def training_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self.forward(x)
-        #ce_loss = CrossEntropyLoss(weight=torch.Tensor(self.weights).to(y.device))
         loss = iou_loss(y_hat, y)
         # loss = F.cross_entropy(y_hat, y)
-        #dice_loss = DiceLoss(3)
-        #loss = 0.5 * ce_loss(y_hat, y) + 0.5 * dice_loss(y_hat, y, softmax=True)
-        #print(y_hat[:,:,:10,:10].shape)
-        #print(y_hat[:,:,:10,:10])
-        #print(y[:,:,:10,:10].shape)
-        #print(y[:,:,:10,:10])
-        #print(ce_loss(y_hat, y))
         self.log("train/loss", loss)
         return loss
 
     def _shared_eval_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self(x)
-        #loss = CrossEntropyLoss(weight=torch.Tensor(self.weights).to(y.device))(y_hat, y)
         loss = iou_loss(y_hat, y)
         dice_score = dice(y_hat, y)
-        # loss = F.cross_entropy(y_hat, y)
         bg_iou, tc_iou, ar_iou = iou(y, y_hat)
         return loss, bg_iou, tc_iou, ar_iou, dice_score
     

@@ -55,8 +55,6 @@ class DecoderBlock(nn.Module):
     def forward(self, x, skip=None):
         x = self.up(x)
         if skip is not None:
-            #print("SKIP SHAPE: ", skip.shape)
-            #print("X SHAPE: ", x.shape)
             x = torch.cat([x, skip], dim=1)
         x = self.conv1(x)
         x = self.conv2(x)
@@ -85,7 +83,6 @@ class Decoder(nn.Module):
 
         else:
             skip_channels=[0,0,0,0]
-        #print("SKIP", skip_channels)
         blocks = [
             DecoderBlock(in_ch, out_ch, sk_ch) for in_ch, out_ch, sk_ch in zip(in_channels, out_channels, skip_channels)
         ]
@@ -95,26 +92,17 @@ class Decoder(nn.Module):
     def forward(self, hidden_states, features=None):
         B, n_patch, hidden = hidden_states.size()  # reshape from (B, n_patch, hidden) to (B, h, w, hidden)
         h, w = int(768/16), int(1152/16)
-        #h, w = 16, 18
-        #print("DECODER IN", B, n_patch, hidden, h, w)
         x = hidden_states.permute(0, 2, 1)
-        #print("DECODER IN", x.shape)
         x = x.contiguous().view(B, hidden, h, w)
-        #print("DECODER IN RES", x.shape)
         x = self.conv_more(x)
-        #print("DECODER IN CONV", x.shape)
         for i, decoder_block in enumerate(self.blocks):
             if features is not None:
                 skip = features[i] if (i < self.params["n_skip"]) else None
             else:
                 skip = None
             if skip is not None:
-                #print("SKIP", i, skip.shape)
                 pass
             else:
-                #print("SKIP", i, skip)
                 pass
             x = decoder_block(x, skip=skip)
-            #print("BLOCK", i, x.shape)
-        #print("DECODER OUT", x.shape)
         return x

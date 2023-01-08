@@ -39,10 +39,7 @@ class CNN(nn.Module):
         
         features = []
         features.append(x2)
-        #print("FEAT X2", x2.shape)
         features.append(x3)
-        #print("FEAT X3", x3.shape)
         features.append(x4)
-        #print("FEAT X4", x4.shape)
 
         return x5, features[::-1]
