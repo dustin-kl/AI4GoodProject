@@ -133,3 +133,4 @@ widgetsnbextension==4.0.3
 xarray==2022.10.0
 xrft==1.0.0
 yarl==1.8.1
+torchvision==0.14.1

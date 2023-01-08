@@ -1,0 +1,5 @@
+root: ../
+logs:
+#  seg-t: seg_tiny_mask/log.txt
+#  seg-b: seg_tiny_mask_small/log.txt
+  seg-d: test_code/log.txt

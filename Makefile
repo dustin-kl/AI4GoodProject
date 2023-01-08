@@ -1,3 +1,6 @@
+.ONESHELL:
+SHELL := /bin/bash
+
 data = false
 model = model
 test = false
