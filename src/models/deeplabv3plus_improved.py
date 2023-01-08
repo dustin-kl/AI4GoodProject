@@ -4,6 +4,7 @@ import torch.nn.functional as F
 import pytorch_lightning as pl
 
 from src.metrics import iou, iou_loss
+from utils import compute_mean_std
 
 
 def fixed_padding(inputs, kernel_size, rate):
@@ -265,6 +266,7 @@ class ASPP_Plus(pl.LightningModule):
             nn.ReLU(),
         )
         mid_channels = (out_channels * 5) // 16
+        self.ada_in = AdaIN()
         self.self_stylization_block = nn.Sequential(
             nn.AdaptiveAvgPool2d(1),
             nn.Conv2d(out_channels * 5, mid_channels, 1, bias=False),
@@ -272,6 +274,7 @@ class ASPP_Plus(pl.LightningModule):
             nn.Conv2d(mid_channels, out_channels * 5, 1, bias=False),
             nn.Sigmoid(),
         )
+       
 
     def forward(self, x):
         x1 = self.astrous1(x)
@@ -287,6 +290,39 @@ class ASPP_Plus(pl.LightningModule):
         x = self.sequential(x)
 
         return x
+    
+class AdaIN:
+    """
+    Adaptive Instance Normalization as proposed in
+    'Arbitrary Style Transfer in Real-time with Adaptive Instance Normalization' by Xun Huang, Serge Belongie.
+    """
+
+    def _compute_mean_std(
+        self, feats: torch.Tensor, eps=1e-8, infer=False
+    ) -> torch.Tensor:
+        return compute_mean_std(feats, eps, infer)
+
+    def __call__(
+        self,
+        content_feats: torch.Tensor,
+        style_feats: torch.Tensor,
+        infer: bool = False,
+    ) -> torch.Tensor:
+        """
+        __call__ Adaptive Instance Normalization as proposaed in
+        'Arbitrary Style Transfer in Real-time with Adaptive Instance Normalization' by Xun Huang, Serge Belongie.
+        Args:
+            content_feats (torch.Tensor): Content features
+            style_feats (torch.Tensor): Style Features
+        Returns:
+            torch.Tensor: [description]
+        """
+        c_mean, c_std = self._compute_mean_std(content_feats, infer=infer)
+        s_mean, s_std = self._compute_mean_std(style_feats, infer=infer)
+
+        normalized = (s_std * (content_feats - c_mean) / c_std) + s_mean
+
+        return normalized
 
 
 class DeepLabV3PlusImproved(pl.LightningModule):
