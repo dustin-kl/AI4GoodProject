@@ -16,20 +16,12 @@ def main():
     if args.small_dataset:
         files = files[:10]
 
-    datamodule = ClimateNetDataModule(
-        files,
-        config.features,
-        args.batch_size,
-        num_workers=args.num_workers,
-        shuffle=args.shuffle,
-    )
-
-    model = get_model(args.model)
-
-    Processor.fit(model, datamodule, max_epochs=50)
+    if args.stage == "fit":
+        Processor.fit(files, config, args, max_epochs=50)
+    elif args.stage == "cv":
+        Processor.cv(files, config, args, max_epochs=50)
 
 
 if __name__ == "__main__":
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
-    wandb.init(project="ClimateNet")
     main()

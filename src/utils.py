@@ -98,7 +98,7 @@ class Logger:
 
 class Config:
     @staticmethod
-    def init_config(seed=6):
+    def init_config(seed=0):
         seed_everything(seed)
 
         config = Config()
@@ -113,6 +113,8 @@ class Parser:
     @staticmethod
     def parse_args():
         parser = argparse.ArgumentParser()
+
+        parser.add_argument("--stage", type=str, default="fit")
 
         # Data module
         parser.add_argument("--batch_size", type=int, default=4)

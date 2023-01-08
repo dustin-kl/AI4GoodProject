@@ -26,6 +26,7 @@ nvidia-cuda-runtime-cu11==11.7.99
 nvidia-cudnn-cu11==8.5.0.96
 packaging==21.0
 pathtools==0.1.2
+Pillow==9.3.0
 promise==2.3
 protobuf==3.20.1
 psutil==5.9.4

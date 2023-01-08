@@ -8,9 +8,10 @@ from sklearn.model_selection import train_test_split
 
 
 class ClimateNetDataModule(pl.LightningDataModule):
-    def __init__(self, files, feature_list, batch_size, num_workers=4, shuffle=True):
+    def __init__(self, train_files, val_files, feature_list, batch_size, num_workers=4, shuffle=True):
         super().__init__()
-        self.files = files
+        self.train_files = train_files
+        self.val_files = val_files
         self.batch_size = batch_size
         self.feature_list = feature_list
         self.num_workers = num_workers
@@ -18,13 +19,12 @@ class ClimateNetDataModule(pl.LightningDataModule):
 
     def setup(self, stage: str = None):
         if stage == "fit":
-            train_files, val_files = random_split(self.files, [0.8, 0.2])
             self.train_ds = []
             self.val_ds = []
-            for file in train_files:
+            for file in self.train_files:
                 features, labels = self.load_data(file, self.feature_list)
                 self.train_ds.append(self.transform(features, labels))
-            for file in val_files:
+            for file in self.val_files:
                 features, labels = self.load_data(file, self.feature_list)
                 self.val_ds.append(self.transform(features, labels))
 
