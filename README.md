@@ -3,70 +3,38 @@
 This is a project of the AI4Good course offered at ETH Zurich.
 
 ## Preparation
-Make sure to have pipenv installed.
-
-## Pipeline
-We use Makefile in order to hide the complexity of the shell commands.
-
-### Running on a Local Machine
-Here we show the steps to follow in order to run our models on a local machine, it works on both MacOS and Linux, for Windows users we'd recommend to use WSL. For simplicity, just run the following command:
-
-```bash
-make pipeline data=true/false
-# If data is set to false, data won't be downloaded nor extracted.
-# If you need to download and extract the data please set the variable to true.
-# By default data=false.
-```
-
-In the following, the content of the "make pipeline" command is explaind in detail.
-
-#### Data Downloading
-For the dimensionality reason, the dataset is not loaded into the repository. In order to download the dataset, run the following command:
-
+In order to download the needed data please run the following command:
 ```bash
 make download-data
-make unzip-data # Data will be unziped to the "dataset" folder in the root folder of the Makefile
+```
+The command works on Linux/MacOS. Windows users can use WSL for to run the command.
+
+## Running
+We provide two different ways of running.
+
+### The Easy Way
+Make sure to exit from your current virtual environment and install pipenv, then run the following command:
+```bash
+make run-pipeline model=unet/transunet/attention/baseline stage=fit/cv
+```
+This command will create automatically a new virtual environment using pipenv, and runs the code within the created environment
+To remove the created virtual environment, run the following command:
+```bash
+make remove-env
 ```
 
-#### Environment Setting
-In order to have assure a clean environment, without disturbances for different versions of packages, the use of a virtual environment is prefered, we used pipenv for its simplicity:
-
+### The Custom Way
+Install the packages in the way you prefer (we recommend to use a virtual environment in order to avoid package conflicts).
+In order to run the code, execute the following the command:
 ```bash
-make set-pipenv
+python main.py
 ```
-
-In order to freeze the packages installed in the virtual environment to requirements.txt, run the following:
-
+You can also add the following arguments to the execution of the python code:
 ```bash
-make freeze
-```
-
-#### Run a model
-Just run the following command:
-
-```bash
-make run model="the model you want" # This command still has to be completed
-```
-
-### Running on Euler
-In order to run the models on Euler run the following commands:
-
-```bash
-# This command has to be run on your own machine.
-make pipeline-local username="your eth username" data=true/false
-# The source code is not uploaded automatically anymore, 
-# in order to upload the code to euler, 
-# please push to the repository and make a pull/clone on Euler.
-
-# This command has to be run on Euler
-make pipeline-euler data=true/false
-```
-
-The details of the pipeline here is mostly similar to the normal pipeline, including also some commands needed to upload the data to Euler. For curiosity you are free to give a look to Makefile.
-
-## Testing
-In order to test your code with a smaller dataset, please run the command in the following way:
-
-```bash
-make your-command argument=argument test=true
+--model=baseline/unet/attention/transunet # Select the model you wish to run
+--batch_size=4 # Select the batch size
+--num_workers=4 # Number of the workers for each dataloader
+--small_dataset # If you want to run the code only with a portion of the dataset
+--no_shuffle # If you don't want the dataloader shuffling the data
+--stage=fit/cv # Fit or cross-validate the model
 ```
