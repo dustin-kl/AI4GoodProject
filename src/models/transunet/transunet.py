@@ -1,5 +1,6 @@
 import pytorch_lightning as pl
 import torch
+import torch.nn.functional as F
 import numpy as np
 import torch.nn as nn
 from torch.nn.modules.loss import CrossEntropyLoss
@@ -41,6 +42,7 @@ class TransUNet(pl.LightningModule):
         x = self.decoder(x, features)
         #print("DECODER OUTPUT SHAPE: ", x.shape)
         logits = self.segmentation_head(x)
+        logits = F.softmax(logits, dim=1)
         #print("LOGITS SHAPE: ", logits.shape)
         return logits
 
