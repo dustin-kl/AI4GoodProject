@@ -16,21 +16,15 @@ class ClimateNetDataModule(pl.LightningDataModule):
         self.num_workers = num_workers
         self.shuffle = shuffle
 
-        self.train_files = self.val_files = None
-        self.train_ds = self.val_ds = None
-
-    def prepare_data(self):
-        #self.train_files, self.val_files = random_split(self.files, [0.8, 0.2])
-        self.train_files, self.val_files = train_test_split(self.files, test_size=0.2)
-
     def setup(self, stage: str = None):
         if stage == "fit":
+            train_files, val_files = random_split(self.files, [0.8, 0.2])
             self.train_ds = []
             self.val_ds = []
-            for file in self.train_files:
+            for file in train_files:
                 features, labels = self.load_data(file, self.feature_list)
                 self.train_ds.append(self.transform(features, labels))
-            for file in self.val_files:
+            for file in val_files:
                 features, labels = self.load_data(file, self.feature_list)
                 self.val_ds.append(self.transform(features, labels))
 

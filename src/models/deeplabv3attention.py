@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import pytorch_lightning as pl
 
-from src.metrics import iou, iou_loss
+from src.metrics import iou, iou_loss, dice
 
 
 def fixed_padding(inputs, kernel_size, rate):
@@ -317,11 +317,11 @@ class DeepLabV3PlusAttention(pl.LightningModule):
             nn.Conv2d(304, 256, kernel_size=3, stride=1, padding=1, bias=False),
             nn.BatchNorm2d(256),
             nn.ReLU(),
-            nn.Dropout(0.5),
+            #nn.Dropout(0.5),
             nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1, bias=False),
             nn.BatchNorm2d(256),
             nn.ReLU(),
-            nn.Dropout(0.5),
+            #nn.Dropout(0.5),
             nn.Conv2d(256, out_channels, kernel_size=1, stride=1, bias=False),
         )
 
@@ -354,26 +354,28 @@ class DeepLabV3PlusAttention(pl.LightningModule):
 
         x = F.interpolate(x, size=in_size[2:], mode="bilinear", align_corners=True)
 
-        #x = F.softmax(x, dim=1)
+        x = F.softmax(x, dim=1)
 
         return x
 
     def training_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self(x)
-        loss = F.cross_entropy(y_hat, y)
-        self.log("train_loss", loss)
+        loss = iou_loss(y_hat, y)
+        # loss = F.cross_entropy(y_hat, y)
+        self.log("train/loss", loss)
         return loss
 
     def validation_step(self, batch, batch_idx):
-        loss, bg_iou, tc_iou, ar_iou = self._shared_eval_step(batch, batch_idx)
+        loss, bg_iou, tc_iou, ar_iou, dice_score = self._shared_eval_step(batch, batch_idx)
         mean_iou = (bg_iou + tc_iou + ar_iou) / 3
         metrics = {
-            "val_loss": loss.item(),
-            "val_bg_iou": bg_iou.item(),
-            "val_tc_iou": tc_iou.item(),
-            "val_ar_iou": ar_iou.item(),
-            "val_mean_iou": mean_iou.item(),
+            "val/loss": loss.item(),
+            "val/bg_iou": bg_iou.item(),
+            "val/tc_iou": tc_iou.item(),
+            "val/ar_iou": ar_iou.item(),
+            "val/mean_iou": mean_iou.item(),
+            "val/dice": dice_score,
         }
         self.log_dict(metrics)
         return metrics
@@ -381,9 +383,11 @@ class DeepLabV3PlusAttention(pl.LightningModule):
     def _shared_eval_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self(x)
-        loss = F.cross_entropy(y_hat, y)
+        loss = iou_loss(y_hat, y)
+        # loss = F.cross_entropy(y_hat, y)
         bg_iou, tc_iou, ar_iou = iou(y, y_hat)
-        return loss, bg_iou, tc_iou, ar_iou
+        dice_score = dice(y_hat, y)
+        return loss, bg_iou, tc_iou, ar_iou, dice_score
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters())

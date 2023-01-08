@@ -1,41 +1,35 @@
 import os
 
-from config import config
-from parser import args
-from src.models.hyperparameters import params
+import wandb
+
 from src.data_module import ClimateNetDataModule
-from src.models.manager import get_model, train_model
-from src.utils import Logger, Generic
+from src.models import get_model
+from src.processor import Processor
+from src.utils import Config, Generic, Parser
 
 
 def main():
-    files = Generic.list_files("./dataset/")
+    config = Config.init_config()
+    args = Parser.parse_args()
 
-    if len(files) < 10:
-        raise Exception(
-            "The amount of data is not enough, please download the data before running again."
-        )
-
-    model_name = args.model
-    model_params = params[model_name]
-
-    feature_list = config["feature_list"]
-    batch_size = model_params["batch_size"]
-
-    if args.test:
+    files = Generic.list_files(config.data_dir)
+    if args.small_dataset:
         files = files[:10]
-    print('create Datamodule')
-    data_module = ClimateNetDataModule(files, feature_list, batch_size)
 
-    print(f'Create Model {model_name}')
-    model = get_model(model_name, len(feature_list), params[model_name])
+    datamodule = ClimateNetDataModule(
+        files,
+        config.features,
+        args.batch_size,
+        num_workers=args.num_workers,
+        shuffle=args.shuffle,
+    )
 
-    print('Start Training')
-    if args.test:
-        model_name = "test"
-    train_model(model, model_name, data_module)
+    model = get_model(args.model)
+
+    Processor.fit(model, datamodule, max_epochs=50)
 
 
 if __name__ == "__main__":
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
+    wandb.init(project="ClimateNet")
     main()

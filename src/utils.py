@@ -1,9 +1,11 @@
+import argparse
 import json
 import logging
 import os
 from os.path import join
 import time
 
+from lightning_lite.utilities.seed import seed_everything
 from netCDF4 import Dataset
 from pytorch_lightning.loggers import TensorBoardLogger
 from sklearn.model_selection import train_test_split
@@ -92,3 +94,37 @@ class Logger:
     def format_message(message):
         now = time.strftime("[%Y-%m-%d %H:%M:%S]")
         return f"{now} {message}"
+
+
+class Config:
+    @staticmethod
+    def init_config(seed=6):
+        seed_everything(seed)
+
+        config = Config()
+        config.data_dir = "./dataset/"
+        config.features = ["TMQ", "U850", "V850", "PRECT"]
+        config.height = 768
+        config.width = 1152
+
+        return config
+
+class Parser:
+    @staticmethod
+    def parse_args():
+        parser = argparse.ArgumentParser()
+
+        # Data module
+        parser.add_argument("--batch_size", type=int, default=4)
+        parser.add_argument("--num_workers", type=int, default=4)
+        parser.add_argument("--small_dataset", action="store_true")
+        parser.add_argument("--no_small_dataset", action="store_false", dest="small_dataset")
+        parser.add_argument("--shuffle", action="store_true")
+        parser.add_argument("--no_shuffle", action="store_false", dest="shuffle")
+        parser.set_defaults(small_dataset=False, shuffle=True)
+        # Model
+        parser.add_argument("--model", type=str, default="unet")
+
+        args = parser.parse_args()
+
+        return args

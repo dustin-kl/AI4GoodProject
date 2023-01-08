@@ -10,7 +10,7 @@ import torchvision.transforms as transforms
 from torch import optim
 from torch.utils.data import DataLoader, random_split
 from torch.utils.data.distributed import DistributedSampler
-from src.dice_score import dice_loss, generalized_dice_loss
+from metrics.dice_score import dice_loss, generalized_dice_loss
 from src.metrics import iou
 from torchvision.ops.focal_loss import sigmoid_focal_loss
 

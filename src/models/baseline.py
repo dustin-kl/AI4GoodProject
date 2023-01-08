@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.model_zoo as model_zoo
 
-from src.metrics import iou, iou_loss
+from src.metrics import iou, iou_loss, dice
 
 
 class SeparableConv2d(nn.Module):
@@ -499,7 +499,6 @@ class ASPP_module(nn.Module):
 class DeepLabv3_plus(pl.LightningModule):
     def __init__(
         self,
-        params,
         nInputChannels=3,
         n_classes=21,
         os=16,
@@ -512,8 +511,6 @@ class DeepLabv3_plus(pl.LightningModule):
             print("Output stride: {}".format(os))
             print("Number of Input Channels: {}".format(nInputChannels))
         super(DeepLabv3_plus, self).__init__()
-
-        self.params = params
 
         self.lr = 0.0015
 
@@ -599,27 +596,32 @@ class DeepLabv3_plus(pl.LightningModule):
         x, y = batch
         y_hat = self(x)
         loss = iou_loss(y_hat, y)
+        # loss = F.cross_entropy(y_hat, y)
+        self.log("train/loss", loss)
         return loss
 
     def validation_step(self, batch, batch_idx):
-        loss, bg_iou, tc_iou, ar_iou = self._shared_eval_step(batch, batch_idx)
+        loss, bg_iou, tc_iou, ar_iou, dice_score = self._shared_eval_step(batch, batch_idx)
         mean_iou = (bg_iou + tc_iou + ar_iou) / 3
         metrics = {
-            "val_loss": loss,
-            "val_bg_iou": bg_iou,
-            "val_tc_iou": tc_iou,
-            "val_ar_iou": ar_iou,
-            "val_mean_iou": mean_iou,
+            "val/loss": loss,
+            "val/bg_iou": bg_iou,
+            "val/tc_iou": tc_iou,
+            "val/ar_iou": ar_iou,
+            "val/mean_iou": mean_iou,
+            "val/dice": dice_score,
         }
-        self.log_dict(metrics, prog_bar=True)
+        self.log_dict(metrics)
         return metrics
 
     def _shared_eval_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self(x)
         loss = iou_loss(y_hat, y)
+        # loss = F.cross_entropy(y_hat, y)
         bg_iou, tc_iou, ar_iou = iou(y, y_hat)
-        return loss, bg_iou, tc_iou, ar_iou
+        dice_score = dice(y_hat, y)
+        return loss, bg_iou, tc_iou, ar_iou, dice_score
 
     def freeze_bn(self):
         for m in self.modules():

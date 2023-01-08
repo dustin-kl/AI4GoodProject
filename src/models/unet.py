@@ -1,46 +1,31 @@
-import os
-import logging
-from argparse import ArgumentParser
-from collections import OrderedDict
-
+import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torchvision.transforms as transforms
-from torch import optim
-from torch.utils.data import DataLoader, random_split
-from torch.utils.data.distributed import DistributedSampler
-from src.dice_score import dice_loss, generalized_dice_loss, iou_loss
-from src.metrics import iou
-from torchvision.ops.focal_loss import sigmoid_focal_loss
-
-import pytorch_lightning as pl
-import wandb
 import random
+import wandb
 
-# from dataset import DirDataset
+from src.metrics import iou, iou_loss, dice
 
 
-class Unet(pl.LightningModule):
+class UNet(pl.LightningModule):
     def __init__(self, hparams):
-        super(Unet, self).__init__()
+        super(UNet, self).__init__()
         for key in hparams.keys():
-            self.hparams[key]=hparams[key]
+            self.hparams[key] = hparams[key]
 
-        self.n_channels = hparams['n_channels']
-        self.n_classes = hparams['n_classes']
+        self.n_channels = hparams["n_channels"]
+        self.n_classes = hparams["n_classes"]
         self.bilinear = True
         self.lr = 0.001
         self.hyperparams = {
-                            "lr": self.lr,
-                            "weight_decay": 2e-8,
-                            "model": "medium",
-                            #"focal_loss_weight": 50,
-                            "class_weights": [0.35, 70, 5.9],
-                            "optimizer": "adamW" # rmsprob, adamW
-                            }
-        wandb.init(project='lightning_logs', entity='deepseg')
-        wandb.log(self.hyperparams)
+            "lr": self.lr,
+            "weight_decay": 2e-8,
+            "model": "medium",
+            # "focal_loss_weight": 50,
+            "class_weights": [0.35, 70, 5.9],
+            "optimizer": "adamW",  # rmsprob, adamW
+        }
 
         def double_conv(in_channels, out_channels):
             return nn.Sequential(
@@ -54,8 +39,7 @@ class Unet(pl.LightningModule):
 
         def down(in_channels, out_channels):
             return nn.Sequential(
-                nn.MaxPool2d(2),
-                double_conv(in_channels, out_channels)
+                nn.MaxPool2d(2), double_conv(in_channels, out_channels)
             )
 
         class up(nn.Module):
@@ -63,10 +47,13 @@ class Unet(pl.LightningModule):
                 super().__init__()
 
                 if bilinear:
-                    self.up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
+                    self.up = nn.Upsample(
+                        scale_factor=2, mode="bilinear", align_corners=True
+                    )
                 else:
-                    self.up = nn.ConvTranpose2d(in_channels // 2, in_channels // 2,
-                                                kernel_size=2, stride=2)
+                    self.up = nn.ConvTranpose2d(
+                        in_channels // 2, in_channels // 2, kernel_size=2, stride=2
+                    )
 
                 self.conv = double_conv(in_channels, out_channels)
 
@@ -76,12 +63,13 @@ class Unet(pl.LightningModule):
                 diffY = x2.size()[2] - x1.size()[2]
                 diffX = x2.size()[3] - x1.size()[3]
 
-                x1 = F.pad(x1, [diffX // 2, diffX - diffX // 2,
-                                diffY // 2, diffY - diffY // 2])
-                x = torch.cat([x2, x1], dim=1) ## why 1?
+                x1 = F.pad(
+                    x1, [diffX // 2, diffX - diffX // 2, diffY // 2, diffY - diffY // 2]
+                )
+                x = torch.cat([x2, x1], dim=1)  ## why 1?
                 return self.conv(x)
 
-        if (self.hyperparams['model'] == "large"):
+        if self.hyperparams["model"] == "large":
             # Large
             self.inc = double_conv(self.n_channels, 64)
             self.down1 = down(64, 128)
@@ -93,7 +81,7 @@ class Unet(pl.LightningModule):
             self.up3 = up(256, 64)
             self.up4 = up(128, 64)
             self.out = nn.Conv2d(64, self.n_classes, kernel_size=1)
-        elif (self.hyperparams['model'] == "medium"):
+        elif self.hyperparams["model"] == "medium":
             # Medium
             self.inc = double_conv(self.n_channels, 32)
             self.down1 = down(32, 64)
@@ -129,122 +117,70 @@ class Unet(pl.LightningModule):
         x = self.up2(x, x3)
         x = self.up3(x, x2)
         x = self.up4(x, x1)
-        return self.out(x)
+        x = self.out(x)
+        x = F.softmax(x, dim=1)
+        return x
 
     def training_step(self, batch, batch_nb):
         x, y = batch
-        y_hat = self.forward(x) # batch_size, classes, x, y
-        # ce_loss = F.cross_entropy(y_hat, y, weight=torch.Tensor(self.hyperparams['class_weights']).cuda())
-        # # loss_focal = sigmoid_focal_loss(y_hat, y, alpha=0.5, gamma=2, reduction='mean')
-        # dice_weights = torch.Tensor(self.hyperparams['class_weights']).cuda()**2 / torch.sum(torch.Tensor(self.hyperparams['class_weights']).cuda())
-        # loss_dice = generalized_dice_loss(F.softmax(y_hat, dim=1).float(), 
-        #                                 y.float(), 
-        #                                 dice_weights)
-
-        # self.log("train_ce_loss", ce_loss)
-        # self.log("train_dice_loss", loss_dice)
-        # # self.log("train_focal_loss", loss_focal)
-        # # loss = 30 * loss_focal + ce_loss + loss_dice
-        # loss = loss_dice + 3 * ce_loss
-        print('I am training')
-
-        loss = iou_loss(y_hat, y)
-        self.log('train_iou_loss', loss)
-
-        tensorboard_logs = {'train_loss': loss}
-        #print(f'train_loss_at_step: {loss}')
-        bg_iou, tc_iou, ar_iou = iou(y, y_hat)
-        mean_iou = (bg_iou + tc_iou + ar_iou) / 3
-        self.log("train_loss_at_step", loss)
-        self.log('train_bg_iou_step', bg_iou)
-        self.log('train_tc_iou_step', tc_iou)
-        self.log('train_ar_iou_step', ar_iou)
-        self.log("train_mean_iou", mean_iou)
-        
-        return {'loss': loss, 'log': tensorboard_logs}
+        y_hat = self.forward(x)
+        #loss = iou_loss(y_hat, y)
+        loss = F.cross_entropy(y_hat, y)
+        self.log("train/loss", loss)
+        return loss
 
     def validation_step(self, batch, batch_nb):
         x, y = batch
         y_hat = self.forward(x)
-        # print(y.shape, y_hat.shape)
-        # ce_loss = F.cross_entropy(y_hat, y, weight=torch.Tensor(self.hyperparams['class_weights']).cuda())
-        # # loss_focal = sigmoid_focal_loss(y_hat, y, alpha=0.5, gamma=2, reduction='mean')
-        # dice_weights = torch.Tensor(self.hyperparams['class_weights']).cuda()**2 / torch.sum(torch.Tensor(self.hyperparams['class_weights']).cuda())
-        # loss_dice = generalized_dice_loss(F.softmax(y_hat, dim=1).float(), 
-        #                                 y.float(), 
-        #                                 dice_weights) 
+        #loss = iou_loss(y_hat, y)
+        loss = F.cross_entropy(y_hat, y)
+        self.log("val/loss", loss)
 
-        # self.log("val_ce_loss", ce_loss)
-        # self.log("val_dice_loss", loss_dice)
-        # # self.log("val_focal_loss", loss_focal)
-        # # loss = 30 * loss_focal + ce_loss + loss_dice
-        # loss = loss_dice + 3 * ce_loss
-        loss = iou_loss(y_hat, y.float())
-        self.log('val_iou_loss', loss)
-
-        #print(f'val_loss_at_step: {loss}')
         bg_iou, tc_iou, ar_iou = iou(y, y_hat)
         mean_iou = (bg_iou + tc_iou + ar_iou) / 3
-        self.log("val_loss_at_step", loss)
-        self.log('val_bg_iou_step', bg_iou)
-        self.log('val_tc_iou_step', tc_iou)
-        self.log('val_ar_iou_step', ar_iou)
-        self.log("val_mean_iou", mean_iou)
+        dice_score = dice(y_hat, y)
+        self.log("val/bg_iou", bg_iou)
+        self.log("val/tc_iou", tc_iou)
+        self.log("val/ar_iou", ar_iou)
+        self.log("val/mean_iou", mean_iou)
+        self.log("val/dice", dice_score)
+
 
         # Log Images
         print_freq = 20
         rand_num = random.randint(0, print_freq)
-        if (rand_num == 0):
-            max_idx_pred = torch.argmax(y_hat, 1, keepdim=True)[0].detach().cpu().numpy() * 122
+        if rand_num == 0:
+            max_idx_pred = (
+                torch.argmax(y_hat, 1, keepdim=True)[0].detach().cpu().numpy() * 122
+            )
             img_pred = wandb.Image(max_idx_pred, caption="Prediction")
-            max_idx_true = torch.argmax(y, 1, keepdim=True)[0].detach().cpu().numpy() * 122
+            max_idx_true = (
+                torch.argmax(y, 1, keepdim=True)[0].detach().cpu().numpy() * 122
+            )
             img_true = wandb.Image(max_idx_true, caption="Groundtruth")
             wandb.log({"Validation Image: ": [img_pred, img_true]})
-            #self.log_image(key="Val_image", images=[img_pred])
+            # self.log_image(key="Val_image", images=[img_pred])
 
-        return {'val_loss': loss}
-
+    """
     def validation_epoch_end(self, outputs):
-        avg_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
-        tensorboard_logs = {'val_loss': avg_loss}
-        print('End of Validation ', avg_loss)
+        avg_loss = torch.stack([x["val_loss"] for x in outputs]).mean()
+        tensorboard_logs = {"val_loss": avg_loss}
+        print("End of Validation ", avg_loss)
         self.log("val_loss_at_end", avg_loss.detach().cpu())
 
-        return {'avg_val_loss': avg_loss, 'log': tensorboard_logs}
+        return {"avg_val_loss": avg_loss, "log": tensorboard_logs}
+    """
 
-    def configure_optimizers(self): 
-        if self.hyperparams['optimizer'] == "rmsprob":
-            return torch.optim.RMSprop(self.parameters(), lr=self.lr, weight_decay=self.hyperparams['weight_decay'])
+    def configure_optimizers(self):
+        if self.hyperparams["optimizer"] == "rmsprob":
+            return torch.optim.RMSprop(
+                self.parameters(),
+                lr=self.lr,
+                weight_decay=self.hyperparams["weight_decay"],
+            )
         else:
-            return torch.optim.AdamW(self.parameters(), lr=self.lr, weight_decay=self.hyperparams['weight_decay'])
-
-
-    # def __dataloader(self):
-    #     dataset = self.hparams.dataset
-    #     dataset = DirDataset(f'./dataset/{dataset}/train', f'./dataset/{dataset}/train_masks')
-    #     n_val = int(len(dataset) * 0.1)
-    #     n_train = len(dataset) - n_val
-    #     train_ds, val_ds = random_split(dataset, [n_train, n_val])
-    #     train_loader = DataLoader(train_ds, batch_size=1, pin_memory=True, shuffle=True)
-    #     val_loader = DataLoader(val_ds, batch_size=1, pin_memory=True, shuffle=False)
-
-    #     return {
-    #         'train': train_loader,
-    #         'val': val_loader,
-    #     }
-
-    # @pl.data_loader
-    # def train_dataloader(self):
-    #     return self.__dataloader()['train']
-
-    # @pl.data_loader
-    # def val_dataloader(self):
-    #     return self.__dataloader()['val']
-
-    # @staticmethod
-    # def add_model_specific_args(parent_parser):
-    #     parser = ArgumentParser(parents=[parent_parser])
-
-    #     parser.add_argument('--n_channels', type=int, default=3)
-    #     parser.add_argument('--n_classes', type=int, default=1)
-    #     return parser
+            return torch.optim.AdamW(
+                self.parameters(),
+                lr=self.lr,
+                weight_decay=self.hyperparams["weight_decay"],
+            )
