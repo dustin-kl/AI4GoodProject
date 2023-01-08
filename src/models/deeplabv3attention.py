@@ -19,7 +19,7 @@ class SeparableConv2d(pl.LightningModule):
     def __init__(self, in_channels, out_channels):
         super().__init__()
         self.depthwise = nn.Conv2d(
-            in_channels, in_channels, 3, groups=in_channels, bias=False
+            in_channels, in_channels, 3, bias=False
         )
         self.pointwise = nn.Conv2d(in_channels, out_channels, 1, bias=False)
 
