@@ -64,13 +64,9 @@ class Processor:
                 num_workers=args.num_workers,
                 shuffle=args.shuffle,
             )
-            logger = WandbLogger(project="ClimateNet", log_model="all")
-            callbacks = [
-                ModelCheckpoint(monitor="val/mean_iou", mode="max"),
-            ]
+            logger = WandbLogger(project="ClimateNet", log_model=False)
             trainer = Trainer(
                 accelerator="gpu",
-                callbacks=callbacks,
                 devices=-1,
                 enable_progress_bar=False,
                 logger=logger,

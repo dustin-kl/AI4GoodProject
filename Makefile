@@ -14,14 +14,17 @@ create-env:
 
 test-run:
 	@echo "Running with small dataset..."
-	python main.py --small_dataset
+	python main.py --small_dataset --model=$(model) --stage=$(stage)
 
 run:
 	@echo "Running code..."
-	python main.py
+	python main.py --model=$(model) --stage=$(stage)
 
 exit-env:
 	exit
 
 remove-env:
 	pipenv --rm
+
+test-run-pipeline: create-env test-run exit-env
+run-pipeline: create-env run exit-env
