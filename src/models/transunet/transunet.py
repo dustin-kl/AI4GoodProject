@@ -32,7 +32,6 @@ class TransUNet(pl.LightningModule):
             kernel_size=3,
         )
         self.params = params
-        self.lr = 0.0001
         self.weights = [3.0, 30.0, 10.0]
 
     def forward(self, x):
@@ -75,4 +74,4 @@ class TransUNet(pl.LightningModule):
         return metrics
 
     def configure_optimizers(self):
-        return torch.optim.Adam(self.parameters(), lr=0.01)
+        return torch.optim.Adam(self.parameters())
