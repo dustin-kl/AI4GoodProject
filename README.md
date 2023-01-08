@@ -17,7 +17,7 @@ Make sure to exit from your current virtual environment and install pipenv, then
 ```bash
 make run-pipeline model=unet/transunet/attention/baseline stage=fit/cv
 ```
-This command will create automatically a new virtual environment using pipenv, and runs the code within the created environment
+This command will create automatically a new virtual environment using pipenv, and runs the code within the created environment.
 To remove the created virtual environment, run the following command:
 ```bash
 make remove-env
