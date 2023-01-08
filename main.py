@@ -26,7 +26,7 @@ def main():
 
     model = get_model(args.model)
 
-    Processor.fit(model, datamodule, max_epochs=50)
+    Processor.fit(model, datamodule, max_epochs=1)
 
 
 if __name__ == "__main__":

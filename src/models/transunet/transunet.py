@@ -4,7 +4,7 @@ import numpy as np
 import torch.nn as nn
 from torch.nn.modules.loss import CrossEntropyLoss
 from .utils import DiceLoss
-from src.metrics import iou
+from src.metrics import iou, iou_loss, dice
 
 from torchviz import make_dot
 
@@ -47,7 +47,9 @@ class TransUNet(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self.forward(x)
-        ce_loss = CrossEntropyLoss(weight=torch.Tensor(self.weights))
+        #ce_loss = CrossEntropyLoss(weight=torch.Tensor(self.weights).to(y.device))
+        loss = iou_loss(y_hat, y)
+        # loss = F.cross_entropy(y_hat, y)
         #dice_loss = DiceLoss(3)
         #loss = 0.5 * ce_loss(y_hat, y) + 0.5 * dice_loss(y_hat, y, softmax=True)
         #print(y_hat[:,:,:10,:10].shape)
@@ -55,37 +57,29 @@ class TransUNet(pl.LightningModule):
         #print(y[:,:,:10,:10].shape)
         #print(y[:,:,:10,:10])
         #print(ce_loss(y_hat, y))
-        return ce_loss(y_hat, y)
+        self.log("train/loss", loss)
+        return loss
 
     def _shared_eval_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self(x)
-        loss = CrossEntropyLoss(weight=torch.Tensor(self.weights))(y_hat, y)
+        #loss = CrossEntropyLoss(weight=torch.Tensor(self.weights).to(y.device))(y_hat, y)
+        loss = iou_loss(y_hat, y)
+        dice_score = dice(y_hat, y)
+        # loss = F.cross_entropy(y_hat, y)
         bg_iou, tc_iou, ar_iou = iou(y, y_hat)
-        return loss, bg_iou, tc_iou, ar_iou
+        return loss, bg_iou, tc_iou, ar_iou, dice_score
     
     def validation_step(self, batch, batch_idx):
-        loss, bg_iou, tc_iou, ar_iou = self._shared_eval_step(batch, batch_idx)
+        loss, bg_iou, tc_iou, ar_iou, dice_score = self._shared_eval_step(batch, batch_idx)
         mean_iou = (bg_iou + tc_iou + ar_iou) / 3
         metrics = {
-            "val_loss": loss,
-            "val_bg_iou": bg_iou,
-            "val_tc_iou": tc_iou,
-            "val_ar_iou": ar_iou,
-            "val_mean_iou": mean_iou,
-        }
-        self.log_dict(metrics)
-        return metrics
-
-    def test_step(self, batch, batch_idx):
-        loss, bg_iou, tc_iou, ar_iou = self._shared_eval_step(batch, batch_idx)
-        mean_iou = (bg_iou + tc_iou + ar_iou) / 3
-        metrics = {
-            "val_loss": loss,
-            "val_bg_iou": bg_iou,
-            "val_tc_iou": tc_iou,
-            "val_ar_iou": ar_iou,
-            "val_mean_iou": mean_iou,
+            "val/loss": loss,
+            "val/bg_iou": bg_iou,
+            "val/tc_iou": tc_iou,
+            "val/ar_iou": ar_iou,
+            "val/mean_iou": mean_iou,
+            "val/dice": dice_score,
         }
         self.log_dict(metrics)
         return metrics

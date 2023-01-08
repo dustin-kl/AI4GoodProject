@@ -124,16 +124,16 @@ class UNet(pl.LightningModule):
     def training_step(self, batch, batch_nb):
         x, y = batch
         y_hat = self.forward(x)
-        #loss = iou_loss(y_hat, y)
-        loss = F.cross_entropy(y_hat, y)
+        loss = iou_loss(y_hat, y)
+        #loss = F.cross_entropy(y_hat, y)
         self.log("train/loss", loss)
         return loss
 
     def validation_step(self, batch, batch_nb):
         x, y = batch
         y_hat = self.forward(x)
-        #loss = iou_loss(y_hat, y)
-        loss = F.cross_entropy(y_hat, y)
+        loss = iou_loss(y_hat, y)
+        #loss = F.cross_entropy(y_hat, y)
         self.log("val/loss", loss)
 
         bg_iou, tc_iou, ar_iou = iou(y, y_hat)
